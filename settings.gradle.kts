@@ -24,3 +24,12 @@ dependencyResolutionManagement {
 
 rootProject.name = "ADA"
 include(":app")
+include(":core")
+include(":feature")
+include(":core:database")
+include(":core:datastore")
+include(":core:common")
+include(":core:domain")
+include(":core:model")
+include(":core:network")
+include(":core:ui")
