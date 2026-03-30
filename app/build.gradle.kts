@@ -5,8 +5,8 @@ plugins {
     alias(libs.plugins.com.google.ksp)
     alias(libs.plugins.com.dagger.hilt)
     //    Firebase
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+//    alias(libs.plugins.google.services)
+//    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -45,6 +45,14 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:ui"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:network"))
+    implementation(project(":core:database"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:model"))
+    implementation(project(":feature:dashboard"))
+
     //    firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
