@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.ADA" parent="Theme.MaterialComponents.Light" />
+</resources>
