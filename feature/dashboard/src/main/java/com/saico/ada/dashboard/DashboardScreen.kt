@@ -1,5 +1,7 @@
 package com.saico.ada.dashboard
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +20,10 @@ import com.saico.ada.dashboard.model.BottomAppBarItems
 import com.saico.ada.dashboard.screen.AgendaScreen
 import com.saico.ada.dashboard.screen.HomeScreen
 import com.saico.ada.dashboard.screen.NotesScreen
-import com.saico.ada.dashboard.screen.WellnesScreen
+import com.saico.ada.dashboard.screen.WellnessScreen
 import com.saico.ada.ui.theme.BaseCrema
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DashboardScreen() {
 
@@ -28,6 +31,7 @@ fun DashboardScreen() {
 
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Context() {
 
@@ -67,7 +71,7 @@ fun Context() {
                     }
 
                     BottomAppBarItems.WELLNES -> {
-                        WellnesScreen()
+                        WellnessScreen()
                     }
                     BottomAppBarItems.NOTES -> {
                         NotesScreen()
