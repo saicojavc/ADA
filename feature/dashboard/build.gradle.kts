@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.animation)
     implementation(libs.googleid)
+    implementation(libs.androidx.room.ktx)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
