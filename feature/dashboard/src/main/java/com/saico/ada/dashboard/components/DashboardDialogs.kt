@@ -9,14 +9,25 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DirectionsWalk
+import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.NightsStay
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.*
 import androidx.compose.material3.ExposedDropdownMenuDefaults.textFieldColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -33,17 +44,18 @@ import java.time.format.DateTimeFormatter
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddTareaDialog(
+    initialTarea: Tarea? = null,
     onDismiss: () -> Unit,
     onConfirm: (Tarea) -> Unit
 ) {
     // --- ESTADOS DE DATOS (Objetos reales) ---
-    var titulo by remember { mutableStateOf("") }
-    var categoriaSelected by remember { mutableStateOf("Trabajo") }
+    var titulo by remember { mutableStateOf(initialTarea?.titulo ?: "") }
+    var categoriaSelected by remember { mutableStateOf(initialTarea?.categoria ?: "Trabajo") }
 
-    // Inicializamos con la fecha/hora actual
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var startTime by remember { mutableStateOf(LocalTime.now().withMinute(0)) } // Redondeamos a la hora
-    var endTime by remember { mutableStateOf(LocalTime.now().plusHours(1).withMinute(0)) }
+    // Inicializamos con los valores de la tarea a editar o con la fecha/hora actual
+    var selectedDate by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()) }
+    var startTime by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now().withMinute(0)) }
+    var endTime by remember { mutableStateOf(initialTarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1).withMinute(0)) }
 
     val categorias = listOf(
         CategoryItem("Trabajo", AmbarNeutro, "#F2CC8F"),
@@ -51,14 +63,24 @@ fun AddTareaDialog(
         CategoryItem("Maternidad", TerracotaSuave, "#E07A5F")
     )
 
-    // Estilos de texto reutilizables (Tu estética)
-    val textFieldColors = textFieldColors()
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = TextoGrisOscuro,
+        unfocusedTextColor = TextoGrisOscuro,
+        cursorColor = VerdeSalvia
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("Nueva Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif) },
+        title = { 
+            Text(
+                if (initialTarea == null) "Nueva Tarea" else "Editar Tarea", 
+                color = TextoGrisOscuro, 
+                fontWeight = FontWeight.Bold, 
+                fontFamily = FontFamily.Serif
+            ) 
+        },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(20.dp), // Más espacio para respirar
@@ -162,8 +184,9 @@ fun AddTareaDialog(
                     if (titulo.isNotBlank() && endTime.isAfter(startTime)) {
                         onConfirm(
                             Tarea(
+                                id = initialTarea?.id ?: 0,
                                 titulo = titulo,
-                                descripcion = "",
+                                descripcion = initialTarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, startTime),
                                 fechaHoraFin = LocalDateTime.of(selectedDate, endTime),
                                 categoria = categoriaSelected,
@@ -176,12 +199,12 @@ fun AddTareaDialog(
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {
-                Text("Guardar Tarea", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(if (initialTarea == null) "Guardar Tarea" else "Actualizar Tarea", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text("Quizás luego", color = TerracotaSuave.copy(alpha = 0.7f))
+                Text(if (initialTarea == null) "Quizás luego" else "Cancelar", color = TerracotaSuave.copy(alpha = 0.7f))
             }
         }
     )
@@ -283,78 +306,174 @@ fun AddBienestarDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, Float) -> Unit
 ) {
-    var tipo by remember { mutableStateOf("Hidratación") }
-    val tipos = listOf("Hidratación", "Pasos", "Sueño", "Skincare", "Lectura")
-    var valor by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    // Definimos los tipos con su configuración visual
+    val opcionesBienestar = remember {
+        listOf(
+            BienestarOption("Hidratación", Icons.Rounded.WaterDrop, VerdeSalvia, "ml", 100f, 2000f, 100f),
+            BienestarOption("Pasos", Icons.Rounded.DirectionsWalk, AmbarNeutro, "pasos", 500f, 15000f, 500f),
+            BienestarOption("Sueño", Icons.Rounded.NightsStay, Color(0xFF945FFB), "hrs", 1f, 12f, 0.5f),
+            BienestarOption("Lectura", Icons.Rounded.MenuBook, TerracotaSuave, "min", 5f, 120f, 5f)
+        )
+    }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = TextoGrisOscuro,
-        unfocusedTextColor = TextoGrisOscuro,
-        cursorColor = VerdeSalvia
-    )
+    var seleccionado by remember { mutableStateOf(opcionesBienestar[0]) }
+    var valorActual by remember { mutableStateOf(seleccionado.paso) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("Registro de Bienestar", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        title = {
+            Text(
+                "Registro de Bienestar",
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box {
-                    OutlinedButton(
-                        onClick = { expanded = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextoGrisOscuro)
-                    ) {
-                        Text("Tipo: $tipo")
-                    }
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        tipos.forEach { t ->
-                            DropdownMenuItem(
-                                text = { Text(t) },
-                                onClick = {
-                                    tipo = t
-                                    expanded = false
-                                }
-                            )
-                        }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 1. SELECTOR DE TIPO (Iconos en Row)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    opcionesBienestar.forEach { opcion ->
+                        val isSelected = seleccionado.nombre == opcion.nombre
+                        WellnessIconChip(
+                            option = opcion,
+                            isSelected = isSelected,
+                            onClick = {
+                                seleccionado = opcion
+                                valorActual = opcion.paso // Reiniciamos al paso base al cambiar
+                            }
+                        )
                     }
                 }
 
-                OutlinedTextField(
-                    value = valor,
-                    onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) valor = it },
-                    label = { Text("Valor") },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    textStyle = TextStyle(color = TextoGrisOscuro)
-                )
+                // 2. VISUALIZADOR DE VALOR GRANDE
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (seleccionado.nombre == "Sueño") "%.1f".format(valorActual) else valorActual.toInt().toString(),
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Black,
+                        color = seleccionado.color
+                    )
+                    Text(
+                        text = seleccionado.unidad,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextoGrisOscuro.copy(alpha = 0.5f)
+                    )
+                }
+
+                // 3. STEPPER / CONTROL TÁCTIL (Sustituye al TextField feo)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    // Botón Menos
+                    CircularActionButton(Icons.Rounded.Remove, seleccionado.color) {
+                        if (valorActual > seleccionado.min) valorActual -= seleccionado.paso
+                    }
+
+                    // Slider de apoyo para ajustes rápidos
+                    Slider(
+                        value = valorActual,
+                        onValueChange = { valorActual = it },
+                        valueRange = seleccionado.min..seleccionado.max,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = seleccionado.color,
+                            activeTrackColor = seleccionado.color,
+                            inactiveTrackColor = seleccionado.color.copy(alpha = 0.1f)
+                        )
+                    )
+
+                    // Botón Más
+                    CircularActionButton(Icons.Rounded.Add, seleccionado.color) {
+                        if (valorActual < seleccionado.max) valorActual += seleccionado.paso
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    val v = valor.toFloatOrNull()
-                    if (v != null) {
-                        onConfirm(tipo, v)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
-                shape = RoundedCornerShape(16.dp)
+                onClick = { onConfirm(seleccionado.nombre, valorActual) },
+                colors = ButtonDefaults.buttonColors(containerColor = seleccionado.color),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Text("Guardar", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Confirmar Registro", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = TerracotaSuave)
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text("Cerrar", color = TextoGrisOscuro.copy(alpha = 0.4f))
             }
         }
     )
 }
+@Composable
+fun WellnessIconChip(
+    option: BienestarOption,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Surface(
+            modifier = Modifier.size(56.dp),
+            shape = CircleShape,
+            color = if (isSelected) option.color else Color.White,
+            border = BorderStroke(1.dp, if (isSelected) Color.Transparent else option.color.copy(alpha = 0.2f)),
+            shadowElevation = if (isSelected) 4.dp else 0.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = option.icon,
+                    contentDescription = option.nombre,
+                    tint = if (isSelected) Color.White else option.color,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = option.nombre,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) TextoGrisOscuro else TextoGrisOscuro.copy(alpha = 0.5f),
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+@Composable
+fun CircularActionButton(icon: ImageVector, color: Color, onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(40.dp)
+            .background(color.copy(alpha = 0.1f), CircleShape)
+    ) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
+    }
+}
+
+// Modelo de datos para la configuración
+data class BienestarOption(
+    val nombre: String,
+    val icon: ImageVector,
+    val color: Color,
+    val unidad: String,
+    val min: Float,
+    val max: Float,
+    val paso: Float
+)
 
 @Composable
 fun AddNotaDialog(

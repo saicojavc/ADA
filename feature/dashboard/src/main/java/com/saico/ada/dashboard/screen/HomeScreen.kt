@@ -11,9 +11,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BusinessCenter
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,12 +24,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
+import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.components.AdaSuggestionCard
 import com.saico.ada.ui.theme.*
 import com.saico.ada.ui.util.toComposeColor
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -34,6 +40,8 @@ fun HomeScreen(
     uiState: DashboardState,
     viewModel: DashboardViewModel
 ) {
+    var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp)
@@ -61,7 +69,11 @@ fun HomeScreen(
 
         if (uiState is DashboardState.Success) {
             items(uiState.tareas) { tarea ->
-                TimelineItem(tarea)
+                TimelineItem(
+                    tarea = tarea,
+                    onDelete = { viewModel.deleteTarea(tarea) },
+                    onEdit = { tareaToEdit = tarea }
+                )
             }
         } else {
             item {
@@ -74,10 +86,27 @@ fun HomeScreen(
             }
         }
     }
+
+    if (tareaToEdit != null) {
+        AddTareaDialog(
+            initialTarea = tareaToEdit,
+            onDismiss = { tareaToEdit = null },
+            onConfirm = { editedTarea ->
+                viewModel.addTarea(editedTarea)
+                tareaToEdit = null
+            }
+        )
+    }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HeaderSection(nombre: String) {
+    val currentDate = remember {
+        val formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale("es", "ES"))
+        LocalDate.now().format(formatter).replaceFirstChar { it.uppercase() }
+    }
+
     Column(modifier = Modifier.padding(24.dp)) {
         Text(
             text = "Buenos días, $nombre",
@@ -88,7 +117,7 @@ fun HeaderSection(nombre: String) {
             color = TextoGrisOscuro
         )
         Text(
-            text = "Martes, 31 de Marzo",
+            text = currentDate,
             style = MaterialTheme.typography.bodyMedium,
             color = TextoGrisOscuro.copy(alpha = 0.6f)
         )
@@ -97,13 +126,19 @@ fun HeaderSection(nombre: String) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TimelineItem(tarea: Tarea) {
+fun TimelineItem(
+    tarea: Tarea,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
+) {
     val color = tarea.colorHex.toComposeColor()
     val icon = when(tarea.categoria) {
         "Trabajo" -> Icons.Rounded.BusinessCenter
         "Maternidad" -> Icons.Rounded.CheckCircle
         else -> Icons.Rounded.Home
     }
+
+    var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -154,7 +189,7 @@ fun TimelineItem(tarea: Tarea) {
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = tarea.titulo,
                         style = MaterialTheme.typography.bodyLarge,
@@ -166,6 +201,39 @@ fun TimelineItem(tarea: Tarea) {
                         style = MaterialTheme.typography.labelSmall,
                         color = color
                     )
+                }
+                
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = "Opciones",
+                            tint = TextoGrisOscuro.copy(alpha = 0.4f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(BlancoPuro)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Editar", color = TextoGrisOscuro) },
+                            leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = VerdeSalvia) },
+                            onClick = {
+                                showMenu = false
+                                onEdit()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Eliminar", color = Color.Red.copy(alpha = 0.7f)) },
+                            leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = Color.Red.copy(alpha = 0.7f)) },
+                            onClick = {
+                                showMenu = false
+                                onDelete()
+                            }
+                        )
+                    }
                 }
             }
         }

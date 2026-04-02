@@ -70,6 +70,12 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun deleteTarea(tarea: Tarea) {
+        viewModelScope.launch {
+            deleteEntityUseCase.deleteTarea(tarea)
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun addBienestar(tipo: String, valor: Float, meta: Float, unidad: String, icono: String) {
         viewModelScope.launch {
