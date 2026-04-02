@@ -19,7 +19,7 @@ import com.saico.ada.database.entity.TareaEntity
         BienestarEntity::class,
         NotaEntity::class
     ],
-    version = 1,
+    version = 2, // Incremetado de 1 a 2 debido al cambio de esquema
     exportSchema = false
 )
 @TypeConverters(Converters::class)

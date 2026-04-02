@@ -1,75 +1,76 @@
 package com.saico.ada.dashboard.screen
 
-import androidx.compose.runtime.Composable
-// 1. Core de Compose y Layouts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-
-// 2. Componentes de Material 3 (Importante para el progreso y las tarjetas)
-import androidx.compose.material3.*
-
-// 3. Iconos Redondeados (La estética suave de ADA)
 import androidx.compose.material.icons.Icons
-
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Warning
-
-// 4. Utilidades de UI
-import androidx.compose.runtime.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.saico.ada.ui.theme.BaseCrema
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
-import com.saico.ada.ui.theme.AmbarNeutro
-import com.saico.ada.ui.theme.TerracotaSuave
-import com.saico.ada.ui.theme.TextoGrisOscuro
-import com.saico.ada.ui.theme.VerdeSalvia
-import com.saico.ada.ui.theme.VerdeSalviaClaro
-
-// 5. Tus Colores Personalizados
-// Asegúrate de tener acceso a: BaseCrema, TextoGrisOscuro, VerdeSalvia, VerdeSalviaClaro, etc.
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import com.saico.ada.dashboard.DashboardViewModel
+import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.model.Bienestar
+import com.saico.ada.ui.theme.*
 
 @Composable
-fun WellnessScreen() {
+fun WellnessScreen(
+    uiState: DashboardState,
+    viewModel: DashboardViewModel
+) {
+    val successState = uiState as? DashboardState.Success
+    val registros = successState?.registrosBienestar ?: emptyList()
+
+    // Calculamos un equilibrio promedio basado en las métricas
+    val promedioEquilibrio = if (registros.isNotEmpty()) {
+        (registros.map { if (it.metaObjetivo > 0) (it.valorActual / it.metaObjetivo) * 100 else 0f }.average()).toInt()
+            .coerceIn(0, 100)
+    } else 0
+
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        // 1. Cabecera de Bienestar
+        // 1. Cabecera de Bienestar (Siempre visible)
         item {
-            WellnessHeader(equilibrio = 85) // 85% de equilibrio hoy
+            WellnessHeader(equilibrio = promedioEquilibrio)
         }
 
-        // 2. Widget de Hidratación (Tu sección de Aloe)
+        // 2. Widget de Hidratación (Visible si existe el registro o mensaje de vacío)
+        val hidratacion = registros.find { it.tipo == "Hidratación" }
         item {
-            AloeHydrationCard()
+            if (hidratacion != null) {
+                AloeHydrationCard(hidratacion)
+            } else {
+                // Placeholder o mensaje si no hay registro de hidratación aún
+                EmptySectionMessage("No hay registros de hidratación para hoy.")
+            }
         }
 
-        // 3. Grid de Métricas Rápidas (Pasos y Sueño)
+        // 3. Grid de Métricas (Siempre visible, con valores en 0 si no hay datos)
         item {
-            MetricsGrid()
+            MetricsGrid(registros)
         }
 
-        // 4. Lista de Hábitos (Habit Tracker)
+        // 4. Lista de Hábitos
         item {
             Text(
                 text = "Tus Rituales",
@@ -80,80 +81,37 @@ fun WellnessScreen() {
             )
         }
 
-        items(getMockHabits()) { habit ->
-            HabitRow(habit)
+        val rituales = registros.filter { it.tipo != "Hidratación" && it.tipo != "Pasos" && it.tipo != "Sueño" }
+        
+        if (rituales.isEmpty()) {
+            item {
+                EmptySectionMessage("Aún no tienes rituales registrados.")
+            }
+        } else {
+            items(rituales) { registro ->
+                HabitRow(registro)
+            }
         }
     }
 }
 
 @Composable
-fun AloeHydrationCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = VerdeSalviaClaro),
-        elevation = CardDefaults.cardElevation(0.dp)
+fun EmptySectionMessage(mensaje: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier.padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Un indicador de progreso circular sutil
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = 0.6f,
-                    color = VerdeSalvia,
-                    strokeWidth = 6.dp,
-                    modifier = Modifier.size(60.dp),
-                    trackColor = Color.White.copy(alpha = 0.5f)
-                )
-                Icon(Icons.Rounded.Warning, null, tint = VerdeSalvia) // icon WaterDrop
-            }
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Column {
-                Text("Hidratación de Aloe", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text("600ml / 1L hoy", style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { /* Sumar agua */ }) {
-                    Text("+ Añadir 200ml", color = VerdeSalvia, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
-@Composable
-fun MetricsGrid() {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Tarjeta de Pasos
-        MetricSmallCard(
-            label = "Pasos",
-            value = "8,432",
-            icon = Icons.Rounded.Warning, //DirectionsWalk
-            color = AmbarNeutro,
-            modifier = Modifier.weight(1f)
-        )
-        // Tarjeta de Descanso
-        MetricSmallCard(
-            label = "Sueño",
-            value = "7h 20m",
-            icon = Icons.Rounded.Check, //NightsStay
-            color = Color(0xFF945FFB).copy(alpha = 0.5f), // Un violeta suave
-            modifier = Modifier.weight(1f)
+        Text(
+            text = mensaje,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.5f),
+            textAlign = TextAlign.Center
         )
     }
 }
 
-data class Habit(val nombre: String, val completado: Boolean, val color: Color)
-
-fun getMockHabits() = listOf(
-    Habit("Skincare Natural", true, TerracotaSuave),
-    Habit("Lectura 15 min", false, AmbarNeutro),
-    Habit("Caminata al aire libre", true, VerdeSalvia)
-)
 @Composable
 fun WellnessHeader(equilibrio: Int) {
     Column(
@@ -162,7 +120,6 @@ fun WellnessHeader(equilibrio: Int) {
             .padding(top = 32.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Título de la Sección
         Text(
             text = "Tu Bienestar",
             style = MaterialTheme.typography.headlineMedium.copy(
@@ -174,12 +131,10 @@ fun WellnessHeader(equilibrio: Int) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. Anillo de Equilibrio (La métrica clave de ADA)
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(140.dp)
         ) {
-            // Círculo de fondo (Sombra suave o trazo tenue)
             CircularProgressIndicator(
                 progress = 1f,
                 modifier = Modifier.fillMaxSize(),
@@ -187,7 +142,6 @@ fun WellnessHeader(equilibrio: Int) {
                 strokeWidth = 12.dp,
                 strokeCap = StrokeCap.Round
             )
-            // Círculo de progreso real
             CircularProgressIndicator(
                 progress = equilibrio / 100f,
                 modifier = Modifier.fillMaxSize(),
@@ -196,7 +150,6 @@ fun WellnessHeader(equilibrio: Int) {
                 strokeCap = StrokeCap.Round
             )
 
-            // Texto central (Porcentaje)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "$equilibrio%",
@@ -214,14 +167,13 @@ fun WellnessHeader(equilibrio: Int) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 3. Mensaje Motivador de ADA
         Surface(
             color = Color.White.copy(alpha = 0.7f),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.padding(horizontal = 40.dp)
         ) {
             Text(
-                text = "¡Vas por muy buen camino! Te falta poco para tu meta de hidratación.",
+                text = "¡Vas por muy buen camino! ADA analiza tu equilibrio diario.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextoGrisOscuro.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
@@ -230,18 +182,88 @@ fun WellnessHeader(equilibrio: Int) {
         }
     }
 }
+
 @Composable
-fun HabitRow(habit: Habit) {
+fun AloeHydrationCard(registro: Bienestar) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = VerdeSalviaClaro),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                val progress = if (registro.metaObjetivo > 0) registro.valorActual / registro.metaObjetivo else 0f
+                CircularProgressIndicator(
+                    progress = progress.coerceIn(0f, 1f),
+                    color = VerdeSalvia,
+                    strokeWidth = 6.dp,
+                    modifier = Modifier.size(60.dp),
+                    trackColor = Color.White.copy(alpha = 0.5f)
+                )
+                Icon(Icons.Rounded.Warning, null, tint = VerdeSalvia)
+            }
+
+            Spacer(modifier = Modifier.width(20.dp))
+
+            Column {
+                Text("Hidratación de Aloe", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("${registro.valorActual.toInt()}${registro.unidad} / ${registro.metaObjetivo.toInt()}${registro.unidad} hoy", style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = { /* TODO: Implementar suma en ViewModel */ }) {
+                    Text("+ Añadir 200ml", color = VerdeSalvia, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MetricsGrid(registros: List<Bienestar>) {
+    val pasos = registros.find { it.tipo == "Pasos" }
+    val sueno = registros.find { it.tipo == "Sueño" }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        MetricSmallCard(
+            label = "Pasos",
+            value = pasos?.valorActual?.toInt()?.toString() ?: "0",
+            icon = Icons.Rounded.Warning,
+            color = AmbarNeutro,
+            modifier = Modifier.weight(1f)
+        )
+        MetricSmallCard(
+            label = "Sueño",
+            value = sueno?.valorActual?.let { "${it.toInt()}h" } ?: "0h",
+            icon = Icons.Rounded.Check,
+            color = Color(0xFF945FFB).copy(alpha = 0.5f),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+fun HabitRow(registro: Bienestar) {
+    val completado = registro.valorActual >= registro.metaObjetivo
+    val color = when(registro.tipo) {
+        "Skincare" -> TerracotaSuave
+        "Lectura" -> AmbarNeutro
+        else -> VerdeSalvia
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 6.dp)
-            .clickable { /* Lógica para alternar estado */ },
+            .padding(horizontal = 20.dp, vertical = 6.dp),
         shape = RoundedCornerShape(20.dp),
-        color = Color.White.copy(alpha = 0.7f), // Ligeramente transparente para ver el fondo crema
+        color = Color.White.copy(alpha = 0.7f),
         border = BorderStroke(
             width = 1.dp,
-            color = if (habit.completado) habit.color.copy(alpha = 0.3f) else Color.Transparent
+            color = if (completado) color.copy(alpha = 0.3f) else Color.Transparent
         )
     ) {
         Row(
@@ -252,18 +274,17 @@ fun HabitRow(habit: Habit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Indicador de color lateral o icono
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(habit.color.copy(alpha = 0.15f)),
+                        .background(color.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (habit.completado) Icons.Rounded.Check else Icons.Rounded.Star, // icon SelfCare
+                        imageVector = if (completado) Icons.Rounded.Check else Icons.Rounded.Star,
                         contentDescription = null,
-                        tint = habit.color,
+                        tint = color,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -272,30 +293,29 @@ fun HabitRow(habit: Habit) {
 
                 Column {
                     Text(
-                        text = habit.nombre,
+                        text = registro.tipo,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = TextoGrisOscuro,
-                        textDecoration = if (habit.completado) TextDecoration.LineThrough else TextDecoration.None
+                        textDecoration = if (completado) TextDecoration.LineThrough else TextDecoration.None
                     )
                     Text(
-                        text = if (habit.completado) "¡Completado!" else "Ritual pendiente",
+                        text = if (completado) "¡Completado!" else "Ritual pendiente",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextoGrisOscuro.copy(alpha = 0.5f)
                     )
                 }
             }
 
-            // Checkbox personalizado estilo "Pill"
             IconButton(
-                onClick = { /* TODO: Toggle Habit */ },
+                onClick = { /* TODO: Toggle en ViewModel */ },
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(if (habit.completado) habit.color else Color.Transparent)
-                    .border(1.dp, habit.color, CircleShape)
+                    .background(if (completado) color else Color.Transparent)
+                    .border(1.dp, color, CircleShape)
                     .size(28.dp)
             ) {
-                if (habit.completado) {
+                if (completado) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
                         contentDescription = null,
@@ -307,6 +327,7 @@ fun HabitRow(habit: Habit) {
         }
     }
 }
+
 @Composable
 fun MetricSmallCard(
     label: String,
@@ -316,22 +337,16 @@ fun MetricSmallCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .height(120.dp), // Altura fija para que ambas tarjetas del Grid midan lo mismo
+        modifier = modifier.height(120.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.9f)
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Icono con fondo circular suave
             Surface(
                 modifier = Modifier.size(36.dp),
                 shape = CircleShape,

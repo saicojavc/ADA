@@ -8,6 +8,7 @@ sealed class DashboardState {
     object Loading : DashboardState()
     data class Success(
         val tareas: List<Tarea>,
+        val todasLasTareas: List<Tarea>,
         val registrosBienestar: List<Bienestar>,
         val notas: List<Nota>
     ) : DashboardState()

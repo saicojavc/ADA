@@ -1,12 +1,11 @@
 package com.saico.ada.dashboard
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saico.ada.dashboard.state.DashboardState
-import com.saico.ada.domain.use_case.AddNoteUseCase
-import com.saico.ada.domain.use_case.DeleteEntityUseCase
-import com.saico.ada.domain.use_case.GetDashboardDataUseCase
-import com.saico.ada.domain.use_case.UpdateTaskUseCase
+import com.saico.ada.domain.use_case.*
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
@@ -17,6 +16,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,13 +25,25 @@ class DashboardViewModel @Inject constructor(
     private val getDashboardDataUseCase: GetDashboardDataUseCase,
     private val addNoteUseCase: AddNoteUseCase,
     private val updateTaskUseCase: UpdateTaskUseCase,
-    private val deleteEntityUseCase: DeleteEntityUseCase
+    private val deleteEntityUseCase: DeleteEntityUseCase,
+    private val addBienestarUseCase: AddBienestarUseCase
 ) : ViewModel() {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     val state: StateFlow<DashboardState> = getDashboardDataUseCase()
         .map { data ->
+            val now = LocalTime.now()
+            val today = LocalDate.now()
+            
+            // Filtro para HomeScreen: Solo hoy y que no hayan terminado
+            val tareasFiltradas = data.tareas.filter { 
+                it.fechaHoraInicio.toLocalDate() == today && 
+                it.fechaHoraFin.toLocalTime().isAfter(now)
+            }
+
             DashboardState.Success(
-                tareas = data.tareas,
+                tareas = tareasFiltradas,
+                todasLasTareas = data.tareas, // Para AgendaScreen si fuera necesario
                 registrosBienestar = data.registrosBienestar,
                 notas = data.notas
             ) as DashboardState
@@ -44,33 +57,38 @@ class DashboardViewModel @Inject constructor(
             initialValue = DashboardState.Loading
         )
 
-    fun addNote(nota: Nota) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addNote(titulo: String, contenido: String, colorHex: String) {
         viewModelScope.launch {
-            addNoteUseCase(nota)
+            addNoteUseCase(Nota(titulo = titulo, contenido = contenido, colorEtiquetaHex = colorHex, fechaCreacion = java.time.LocalDateTime.now()))
         }
     }
 
-    fun updateTarea(tarea: Tarea) {
+    fun addTarea(tarea: Tarea) {
         viewModelScope.launch {
             updateTaskUseCase(tarea)
         }
     }
 
-    fun deleteTarea(tarea: Tarea) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addBienestar(tipo: String, valor: Float, meta: Float, unidad: String, icono: String) {
         viewModelScope.launch {
-            deleteEntityUseCase.deleteTarea(tarea)
+            addBienestarUseCase(
+                Bienestar(
+                    tipo = tipo,
+                    valorActual = valor,
+                    metaObjetivo = meta,
+                    unidad = unidad,
+                    iconoNombre = icono,
+                    fecha = java.time.LocalDateTime.now()
+                )
+            )
         }
     }
 
-    fun deleteNota(nota: Nota) {
+    fun updateBienestar(registro: Bienestar, nuevoValor: Float) {
         viewModelScope.launch {
-            deleteEntityUseCase.deleteNota(nota)
-        }
-    }
-
-    fun deleteBienestar(bienestar: Bienestar) {
-        viewModelScope.launch {
-            deleteEntityUseCase.deleteBienestar(bienestar)
+            addBienestarUseCase(registro.copy(valorActual = nuevoValor))
         }
     }
 }

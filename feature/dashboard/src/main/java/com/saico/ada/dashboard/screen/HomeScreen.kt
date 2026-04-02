@@ -1,81 +1,47 @@
 package com.saico.ada.dashboard.screen
 
-import android.graphics.Color
-import androidx.compose.foundation.Canvas
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.BusinessCenter
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.room.util.copy
-import com.saico.ada.dashboard.state.DashboardEvent
+import com.saico.ada.dashboard.DashboardViewModel
+import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.model.Tarea
 import com.saico.ada.ui.components.AdaSuggestionCard
-import com.saico.ada.ui.theme.AmbarNeutro
-import com.saico.ada.ui.theme.BaseCrema
-import com.saico.ada.ui.theme.BlancoPuro
-import com.saico.ada.ui.theme.TerracotaSuave
-import com.saico.ada.ui.theme.TextoGrisOscuro
-import com.saico.ada.ui.theme.VerdeSalvia
+import com.saico.ada.ui.theme.*
+import com.saico.ada.ui.util.toComposeColor
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HomeScreen() {
-    // Datos estáticos para previsualizar el diseño
-    val eventosHoy = listOf(
-        DashboardEvent(
-            1,
-            "08:00",
-            "Daily Scrum Team Alpha",
-            "TRABAJO",
-            AmbarNeutro,
-            Icons.Default.Home
-        ),
-        DashboardEvent(2, "09:15", "Recoger materiales Lucas", "HOGAR", TerracotaSuave, Icons.Rounded.Home),
-        DashboardEvent(3, "12:30", "Reunión Cliente Q2", "TRABAJO", AmbarNeutro, Icons.Rounded.Call),
-        DashboardEvent(4, "17:30", "Cita Pediatra (Sofía)", "MATERNIDAD", TerracotaSuave, Icons.Rounded.Check)
-    )
-
+fun HomeScreen(
+    uiState: DashboardState,
+    viewModel: DashboardViewModel
+) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        // 1. Cabecera Personalizada
         item {
             HeaderSection(nombre = "Jorge")
         }
 
-        // 2. Tarjeta de Inteligencia (Heurística)
         item {
             AdaSuggestionCard(
                 mensaje = "Tienes un hueco de 25 min a las 11:00 AM.",
@@ -83,7 +49,6 @@ fun HomeScreen() {
             )
         }
 
-        // 3. Título de la Agenda
         item {
             Text(
                 text = "Tu Día",
@@ -94,14 +59,19 @@ fun HomeScreen() {
             )
         }
 
-        // 4. Timeline Dinámico
-        items(eventosHoy) { evento ->
-            // Insertamos visualmente el "hueco" antes de la reunión de las 12:30
-            if (evento.hora == "12:30") {
-                TimeGapDivider(duracion = "25 min")
+        if (uiState is DashboardState.Success) {
+            items(uiState.tareas) { tarea ->
+                TimelineItem(tarea)
             }
-
-            TimelineItem(evento)
+        } else {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = VerdeSalvia)
+                }
+            }
         }
     }
 }
@@ -112,7 +82,7 @@ fun HeaderSection(nombre: String) {
         Text(
             text = "Buenos días, $nombre",
             style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Serif, // Le da el toque elegante de ADA
+                fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold
             ),
             color = TextoGrisOscuro
@@ -125,21 +95,28 @@ fun HeaderSection(nombre: String) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TimelineItem(evento: DashboardEvent) {
+fun TimelineItem(tarea: Tarea) {
+    val color = tarea.colorHex.toComposeColor()
+    val icon = when(tarea.categoria) {
+        "Trabajo" -> Icons.Rounded.BusinessCenter
+        "Maternidad" -> Icons.Rounded.CheckCircle
+        else -> Icons.Rounded.Home
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Indicador de tiempo y línea
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.width(50.dp)
         ) {
             Text(
-                text = evento.hora,
+                text = tarea.fechaHoraInicio.format(DateTimeFormatter.ofPattern("HH:mm")),
                 style = MaterialTheme.typography.labelMedium,
                 color = TextoGrisOscuro.copy(alpha = 0.5f)
             )
@@ -148,11 +125,10 @@ fun TimelineItem(evento: DashboardEvent) {
                     .padding(top = 4.dp)
                     .width(2.dp)
                     .height(60.dp)
-                    .background(evento.color.copy(alpha = 0.3f))
+                    .background(color.copy(alpha = 0.3f))
             )
         }
 
-        // Tarjeta del Evento
         Card(
             modifier = Modifier
                 .weight(1f)
@@ -166,64 +142,32 @@ fun TimelineItem(evento: DashboardEvent) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    color = evento.color.copy(alpha = 0.2f),
+                    color = color.copy(alpha = 0.2f),
                     shape = CircleShape,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        imageVector = evento.icon,
+                        imageVector = icon,
                         contentDescription = null,
-                        tint = evento.color,
+                        tint = color,
                         modifier = Modifier.padding(8.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = evento.titulo,
+                        text = tarea.titulo,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextoGrisOscuro
                     )
                     Text(
-                        text = evento.categoria,
+                        text = tarea.categoria,
                         style = MaterialTheme.typography.labelSmall,
-                        color = evento.color
+                        color = color
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun TimeGapDivider(duracion: String) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 30.dp, vertical = 12.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.KeyboardArrowUp, //AutoAwesome
-            contentDescription = null,
-            tint = VerdeSalvia,
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = " Espacio libre: $duracion",
-            style = MaterialTheme.typography.labelLarge,
-            color = VerdeSalvia,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Canvas(modifier = Modifier.weight(1f).height(1.dp)) {
-            drawLine(
-                color = VerdeSalvia.copy(alpha = 0.4f),
-                start = Offset(0f, 0f),
-                end = Offset(size.width, 0f),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-            )
         }
     }
 }
