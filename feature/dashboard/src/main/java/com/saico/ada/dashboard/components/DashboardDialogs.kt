@@ -5,7 +5,17 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -13,17 +23,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
-import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.WaterDrop
-import androidx.compose.material3.*
-import androidx.compose.material3.ExposedDropdownMenuDefaults.textFieldColors
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,9 +59,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saico.ada.model.Tarea
-import com.saico.ada.ui.theme.*
-import java.time.LocalDateTime
+import com.saico.ada.ui.theme.AmbarNeutro
+import com.saico.ada.ui.theme.BaseCrema
+import com.saico.ada.ui.theme.TerracotaSuave
+import com.saico.ada.ui.theme.TextoGrisOscuro
+import com.saico.ada.ui.theme.VerdeSalvia
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -53,9 +82,21 @@ fun AddTareaDialog(
     var categoriaSelected by remember { mutableStateOf(initialTarea?.categoria ?: "Trabajo") }
 
     // Inicializamos con los valores de la tarea a editar o con la fecha/hora actual
-    var selectedDate by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()) }
-    var startTime by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now().withMinute(0)) }
-    var endTime by remember { mutableStateOf(initialTarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1).withMinute(0)) }
+    var selectedDate by remember {
+        mutableStateOf(
+            initialTarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()
+        )
+    }
+    var startTime by remember {
+        mutableStateOf(
+            initialTarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now().withMinute(0)
+        )
+    }
+    var endTime by remember {
+        mutableStateOf(
+            initialTarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1).withMinute(0)
+        )
+    }
 
     val categorias = listOf(
         CategoryItem("Trabajo", AmbarNeutro, "#F2CC8F"),
@@ -73,13 +114,13 @@ fun AddTareaDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { 
+        title = {
             Text(
-                if (initialTarea == null) "Nueva Tarea" else "Editar Tarea", 
-                color = TextoGrisOscuro, 
-                fontWeight = FontWeight.Bold, 
+                if (initialTarea == null) "Nueva Tarea" else "Editar Tarea",
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Serif
-            ) 
+            )
         },
         text = {
             Column(
@@ -99,7 +140,11 @@ fun AddTareaDialog(
 
                 // 2. CATEGORÍAS (Tu diseño original)
                 Column {
-                    Text("Categoría", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
+                    Text(
+                        "Categoría",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextoGrisOscuro.copy(alpha = 0.6f)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -119,11 +164,15 @@ fun AddTareaDialog(
 
                 // 3. SELECTOR DE FECHA ORGÁNICO (Horizontal Scroll)
                 Column {
-                    Text("Fecha", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
+                    Text(
+                        "Fecha",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextoGrisOscuro.copy(alpha = 0.6f)
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Generamos los próximos 14 días
-                    val days = remember { (0..13).map { LocalDate.now().plusDays(it.toLong()) } }
+                    // Generamos los próximos 60 días
+                    val days = remember { (0..59).map { LocalDate.now().plusDays(it.toLong()) } }
 
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -144,12 +193,20 @@ fun AddTareaDialog(
 
                 // 4. SELECTOR DE HORA CUIDADO (Deslizadores Suaves)
                 Column {
-                    Text("Horario", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
+                    Text(
+                        "Horario",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextoGrisOscuro.copy(alpha = 0.6f)
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Mostramos el rango visualmente
                     Text(
-                        text = "${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))} - ${endTime.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                        text = "${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))} - ${
+                            endTime.format(
+                                DateTimeFormatter.ofPattern("HH:mm")
+                            )
+                        }",
                         style = MaterialTheme.typography.titleMedium,
                         color = TextoGrisOscuro,
                         fontWeight = FontWeight.Bold,
@@ -190,21 +247,31 @@ fun AddTareaDialog(
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, startTime),
                                 fechaHoraFin = LocalDateTime.of(selectedDate, endTime),
                                 categoria = categoriaSelected,
-                                colorHex = categorias.find { it.name == categoriaSelected }?.hex ?: "#81B29A"
+                                colorHex = categorias.find { it.name == categoriaSelected }?.hex
+                                    ?: "#81B29A"
                             )
                         )
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(if (initialTarea == null) "Guardar Tarea" else "Actualizar Tarea", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    if (initialTarea == null) "Guardar Tarea" else "Actualizar Tarea",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(if (initialTarea == null) "Quizás luego" else "Cancelar", color = TerracotaSuave.copy(alpha = 0.7f))
+                Text(
+                    if (initialTarea == null) "Quizás luego" else "Cancelar",
+                    color = TerracotaSuave.copy(alpha = 0.7f)
+                )
             }
         }
     )
@@ -227,7 +294,10 @@ fun DatePillItem(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) VerdeSalvia else Color.White,
-        border = BorderStroke(1.dp, if (isSelected) Color.Transparent else TextoGrisOscuro.copy(alpha = 0.1f))
+        border = BorderStroke(
+            1.dp,
+            if (isSelected) Color.Transparent else TextoGrisOscuro.copy(alpha = 0.1f)
+        )
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -237,7 +307,9 @@ fun DatePillItem(
             Text(
                 text = dayName,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) Color.White.copy(alpha = 0.8f) else TextoGrisOscuro.copy(alpha = 0.5f),
+                color = if (isSelected) Color.White.copy(alpha = 0.8f) else TextoGrisOscuro.copy(
+                    alpha = 0.5f
+                ),
                 fontWeight = FontWeight.Bold
             )
             Text(
@@ -249,6 +321,7 @@ fun DatePillItem(
         }
     }
 }
+
 @Composable
 fun AdaTimeSlider(
     value: Float,
@@ -309,9 +382,33 @@ fun AddBienestarDialog(
     // Definimos los tipos con su configuración visual
     val opcionesBienestar = remember {
         listOf(
-            BienestarOption("Hidratación", Icons.Rounded.WaterDrop, VerdeSalvia, "ml", 100f, 2000f, 100f),
-            BienestarOption("Pasos", Icons.Rounded.DirectionsWalk, AmbarNeutro, "pasos", 500f, 15000f, 500f),
-            BienestarOption("Sueño", Icons.Rounded.NightsStay, Color(0xFF945FFB), "hrs", 1f, 12f, 0.5f),
+            BienestarOption(
+                "Hidratación",
+                Icons.Rounded.WaterDrop,
+                VerdeSalvia,
+                "ml",
+                100f,
+                2000f,
+                100f
+            ),
+            BienestarOption(
+                "Pasos",
+                Icons.Rounded.DirectionsWalk,
+                AmbarNeutro,
+                "pasos",
+                500f,
+                15000f,
+                500f
+            ),
+            BienestarOption(
+                "Sueño",
+                Icons.Rounded.NightsStay,
+                Color(0xFF945FFB),
+                "hrs",
+                1f,
+                12f,
+                0.5f
+            ),
             BienestarOption("Lectura", Icons.Rounded.MenuBook, TerracotaSuave, "min", 5f, 120f, 5f)
         )
     }
@@ -358,7 +455,8 @@ fun AddBienestarDialog(
                 // 2. VISUALIZADOR DE VALOR GRANDE
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (seleccionado.nombre == "Sueño") "%.1f".format(valorActual) else valorActual.toInt().toString(),
+                        text = if (seleccionado.nombre == "Sueño") "%.1f".format(valorActual) else valorActual.toInt()
+                            .toString(),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Black,
                         color = seleccionado.color
@@ -405,7 +503,9 @@ fun AddBienestarDialog(
                 onClick = { onConfirm(seleccionado.nombre, valorActual) },
                 colors = ButtonDefaults.buttonColors(containerColor = seleccionado.color),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
                 Text("Confirmar Registro", color = Color.White, fontWeight = FontWeight.Bold)
             }
@@ -417,6 +517,7 @@ fun AddBienestarDialog(
         }
     )
 }
+
 @Composable
 fun WellnessIconChip(
     option: BienestarOption,
@@ -431,7 +532,10 @@ fun WellnessIconChip(
             modifier = Modifier.size(56.dp),
             shape = CircleShape,
             color = if (isSelected) option.color else Color.White,
-            border = BorderStroke(1.dp, if (isSelected) Color.Transparent else option.color.copy(alpha = 0.2f)),
+            border = BorderStroke(
+                1.dp,
+                if (isSelected) Color.Transparent else option.color.copy(alpha = 0.2f)
+            ),
             shadowElevation = if (isSelected) 4.dp else 0.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -452,6 +556,7 @@ fun WellnessIconChip(
         )
     }
 }
+
 @Composable
 fun CircularActionButton(icon: ImageVector, color: Color, onClick: () -> Unit) {
     IconButton(

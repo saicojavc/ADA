@@ -27,6 +27,7 @@ import com.saico.ada.dashboard.screen.WellnessScreen
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.ui.components.AdaSpeedDialFab
 import com.saico.ada.ui.components.FabAction
+import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -34,14 +35,18 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
-    Context(uiState, viewModel)
+    val agendaSelectedDate by viewModel.selectedAgendaDate.collectAsStateWithLifecycle()
+    val agendaViewMode by viewModel.agendaViewMode.collectAsStateWithLifecycle()
+    Context(uiState, viewModel, agendaSelectedDate, agendaViewMode)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Context(
     uiState: DashboardState,
-    viewModel: DashboardViewModel
+    viewModel: DashboardViewModel,
+    agendaSelectedDate: LocalDate,
+    agendaViewMode: AgendaViewMode
 ) {
     var selectedBottomAppBarItem by remember { mutableStateOf(BottomAppBarItems.HOME) }
     var isFabExpanded by remember { mutableStateOf(false) }
@@ -72,7 +77,13 @@ fun Context(
                 ) {
                     when (selectedBottomAppBarItem) {
                         BottomAppBarItems.HOME -> HomeScreen(uiState, viewModel)
-                        BottomAppBarItems.AGENDA -> AgendaScreen()
+                        BottomAppBarItems.AGENDA -> AgendaScreen(
+                            todasLasTareas = (uiState as? DashboardState.Success)?.todasLasTareas ?: emptyList(),
+                            selectedDate = agendaSelectedDate,
+                            agendaViewMode = agendaViewMode,
+                            onDateSelected = viewModel::onAgendaDateSelected,
+                            onViewModeChanged = viewModel::onAgendaViewModeChanged
+                        )
                         BottomAppBarItems.WELLNES -> WellnessScreen(uiState, viewModel)
                         BottomAppBarItems.NOTES -> NotesScreen(uiState, viewModel)
                     }

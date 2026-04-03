@@ -3,7 +3,17 @@ package com.saico.ada.dashboard.screen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -15,8 +25,21 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,7 +51,9 @@ import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.components.AdaSuggestionCard
-import com.saico.ada.ui.theme.*
+import com.saico.ada.ui.theme.BlancoPuro
+import com.saico.ada.ui.theme.TextoGrisOscuro
+import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -78,7 +103,9 @@ fun HomeScreen(
         } else {
             item {
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = VerdeSalvia)
@@ -132,7 +159,7 @@ fun TimelineItem(
     onEdit: () -> Unit
 ) {
     val color = tarea.colorHex.toComposeColor()
-    val icon = when(tarea.categoria) {
+    val icon = when (tarea.categoria) {
         "Trabajo" -> Icons.Rounded.BusinessCenter
         "Maternidad" -> Icons.Rounded.CheckCircle
         else -> Icons.Rounded.Home
@@ -202,7 +229,7 @@ fun TimelineItem(
                         color = color
                     )
                 }
-                
+
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
@@ -227,7 +254,13 @@ fun TimelineItem(
                         )
                         DropdownMenuItem(
                             text = { Text("Eliminar", color = Color.Red.copy(alpha = 0.7f)) },
-                            leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = Color.Red.copy(alpha = 0.7f)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.Delete,
+                                    null,
+                                    tint = Color.Red.copy(alpha = 0.7f)
+                                )
+                            },
                             onClick = {
                                 showMenu = false
                                 onDelete()
