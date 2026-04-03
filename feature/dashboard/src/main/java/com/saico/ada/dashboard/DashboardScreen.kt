@@ -51,7 +51,6 @@ fun Context(
     var selectedBottomAppBarItem by remember { mutableStateOf(BottomAppBarItems.HOME) }
     var isFabExpanded by remember { mutableStateOf(false) }
     
-    // Estados para controlar qué diálogo mostrar
     var showAddTareaDialog by remember { mutableStateOf(false) }
     var showAddBienestarDialog by remember { mutableStateOf(false) }
     var showAddNotaDialog by remember { mutableStateOf(false) }
@@ -123,7 +122,6 @@ fun Context(
             )
         }
 
-        // --- Diálogos ---
         if (showAddTareaDialog) {
             AddTareaDialog(
                 onDismiss = { showAddTareaDialog = false },
@@ -138,7 +136,6 @@ fun Context(
             AddBienestarDialog(
                 onDismiss = { showAddBienestarDialog = false },
                 onConfirm = { tipo, valor ->
-                    // Mapeo simple de metas e iconos para el ejemplo
                     val meta = when(tipo) {
                         "Hidratación" -> 2000f
                         "Pasos" -> 10000f

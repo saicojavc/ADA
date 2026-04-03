@@ -42,9 +42,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.components.AddTareaDialog
@@ -56,6 +58,8 @@ import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -116,7 +120,6 @@ fun HomeScreen(
 
     if (tareaToEdit != null) {
         AddTareaDialog(
-            initialTarea = tareaToEdit,
             onDismiss = { tareaToEdit = null },
             onConfirm = { editedTarea ->
                 viewModel.addTarea(editedTarea)
@@ -165,12 +168,17 @@ fun TimelineItem(
         else -> Icons.Rounded.Home
     }
 
+    // Lógica para determinar si la tarea ya pasó
+    val now = LocalTime.now()
+    val isPast = tarea.fechaHoraFin.toLocalTime().isBefore(now)
+
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .alpha(if (isPast) 0.5f else 1f), // Reducimos opacidad si ya pasó
         verticalAlignment = Alignment.Top
     ) {
         Column(
@@ -180,7 +188,8 @@ fun TimelineItem(
             Text(
                 text = tarea.fechaHoraInicio.format(DateTimeFormatter.ofPattern("HH:mm")),
                 style = MaterialTheme.typography.labelMedium,
-                color = TextoGrisOscuro.copy(alpha = 0.5f)
+                color = TextoGrisOscuro.copy(alpha = 0.5f),
+                textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
             )
             Box(
                 modifier = Modifier
@@ -197,7 +206,7 @@ fun TimelineItem(
                 .padding(start = 8.dp),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = BlancoPuro),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isPast) 0.dp else 2.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -221,12 +230,14 @@ fun TimelineItem(
                         text = tarea.titulo,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextoGrisOscuro
+                        color = TextoGrisOscuro,
+                        textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
                     )
                     Text(
                         text = tarea.categoria,
                         style = MaterialTheme.typography.labelSmall,
-                        color = color
+                        color = color,
+                        textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
 

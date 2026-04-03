@@ -5,22 +5,12 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saico.ada.dashboard.state.DashboardState
-import com.saico.ada.domain.use_case.AddBienestarUseCase
-import com.saico.ada.domain.use_case.AddNoteUseCase
-import com.saico.ada.domain.use_case.DeleteEntityUseCase
-import com.saico.ada.domain.use_case.GetDashboardDataUseCase
-import com.saico.ada.domain.use_case.UpdateTaskUseCase
+import com.saico.ada.domain.use_case.*
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -38,18 +28,16 @@ class DashboardViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     val state: StateFlow<DashboardState> = getDashboardDataUseCase()
         .map { data ->
-            val now = LocalTime.now()
             val today = LocalDate.now()
 
-            // Filtro para HomeScreen: Solo hoy y que no hayan terminado
-            val tareasFiltradas = data.tareas.filter {
-                it.fechaHoraInicio.toLocalDate() == today &&
-                        it.fechaHoraFin.toLocalTime().isAfter(now)
+            // Ahora incluimos todas las tareas de hoy, sin importar la hora
+            val tareasDeHoy = data.tareas.filter {
+                it.fechaHoraInicio.toLocalDate() == today
             }
 
             DashboardState.Success(
-                tareas = tareasFiltradas,
-                todasLasTareas = data.tareas, // Para AgendaScreen si fuera necesario
+                tareas = tareasDeHoy,
+                todasLasTareas = data.tareas,
                 registrosBienestar = data.registrosBienestar,
                 notas = data.notas
             ) as DashboardState
@@ -63,11 +51,8 @@ class DashboardViewModel @Inject constructor(
             initialValue = DashboardState.Loading
         )
 
-    // --- Estado de la Agenda ---
-
     @RequiresApi(Build.VERSION_CODES.O)
     private val _selectedAgendaDate = MutableStateFlow(LocalDate.now())
-
     @RequiresApi(Build.VERSION_CODES.O)
     val selectedAgendaDate: StateFlow<LocalDate> = _selectedAgendaDate.asStateFlow()
 
@@ -82,8 +67,6 @@ class DashboardViewModel @Inject constructor(
     fun onAgendaViewModeChanged(mode: AgendaViewMode) {
         _agendaViewMode.value = mode
     }
-
-    // --- Acciones ---
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun addNote(titulo: String, contenido: String, colorHex: String) {
