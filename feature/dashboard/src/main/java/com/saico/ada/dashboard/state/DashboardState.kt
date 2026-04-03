@@ -7,7 +7,10 @@ import com.saico.ada.model.Tarea
 sealed class DashboardState {
     object Loading : DashboardState()
     data class Success(
-        val tareas: List<Tarea>,
+        val tareasHoy: List<Tarea>,
+        val ritualesHoy: List<Bienestar>,
+        val tareasAgenda: List<Tarea>,
+        val ritualesAgenda: List<Bienestar>,
         val todasLasTareas: List<Tarea>,
         val registrosBienestar: List<Bienestar>,
         val notas: List<Nota>

@@ -78,10 +78,12 @@ fun Context(
                         BottomAppBarItems.HOME -> HomeScreen(uiState, viewModel)
                         BottomAppBarItems.AGENDA -> AgendaScreen(
                             todasLasTareas = (uiState as? DashboardState.Success)?.todasLasTareas ?: emptyList(),
+                            ritualesAgenda = (uiState as? DashboardState.Success)?.ritualesAgenda ?: emptyList(),
                             selectedDate = agendaSelectedDate,
                             agendaViewMode = agendaViewMode,
                             onDateSelected = viewModel::onAgendaDateSelected,
-                            onViewModeChanged = viewModel::onAgendaViewModeChanged
+                            onViewModeChanged = viewModel::onAgendaViewModeChanged,
+                            onToggleRitual = viewModel::toggleRitual
                         )
                         BottomAppBarItems.WELLNES -> WellnessScreen(uiState, viewModel)
                         BottomAppBarItems.NOTES -> NotesScreen(uiState, viewModel)
@@ -135,14 +137,8 @@ fun Context(
         if (showAddBienestarDialog) {
             AddBienestarDialog(
                 onDismiss = { showAddBienestarDialog = false },
-                onConfirm = { tipo, valor ->
-                    val meta = when(tipo) {
-                        "Hidratación" -> 2000f
-                        "Pasos" -> 10000f
-                        "Sueño" -> 8f
-                        else -> 1f
-                    }
-                    viewModel.addBienestar(tipo, valor, meta, if(tipo=="Sueño") "h" else "u", "star")
+                onConfirm = { nombre, hora ->
+                    viewModel.addRitualPersonalizado(nombre, hora)
                     showAddBienestarDialog = false
                 }
             )

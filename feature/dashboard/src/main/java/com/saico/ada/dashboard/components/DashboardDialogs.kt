@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,7 +85,6 @@ fun AddTareaDialog(
                     textStyle = TextStyle(color = TextoGrisOscuro, fontSize = 16.sp)
                 )
 
-                // Selector de Categoría (Chips)
                 Column {
                     Text("Categoría", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
                     Spacer(modifier = Modifier.height(8.dp))
@@ -102,7 +102,6 @@ fun AddTareaDialog(
                     }
                 }
 
-                // Selector de Fecha (Visual Personalizado)
                 OutlinedCard(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth(),
@@ -122,7 +121,6 @@ fun AddTareaDialog(
                     }
                 }
 
-                // Selectores de Hora (Visuales Personalizados)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TimeSelectionCard(
                         label = "Inicio",
@@ -201,6 +199,94 @@ fun AddTareaDialog(
             onConfirm = { 
                 selectedEndTime = it
                 showEndTimePicker = false 
+            }
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun AddBienestarDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, LocalTime?) -> Unit
+) {
+    var nombreRitual by remember { mutableStateOf("") }
+    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = TextoGrisOscuro,
+        unfocusedTextColor = TextoGrisOscuro,
+        focusedLabelColor = VerdeSalvia,
+        cursorColor = VerdeSalvia
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BaseCrema,
+        shape = RoundedCornerShape(28.dp),
+        title = { Text("Nuevo Ritual Personalizado", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Dale un nombre a tu nuevo ritual y asígnale una hora para verlo en tu día.", 
+                    style = MaterialTheme.typography.bodyMedium, color = TextoGrisOscuro.copy(alpha = 0.7f))
+                
+                OutlinedTextField(
+                    value = nombreRitual,
+                    onValueChange = { nombreRitual = it },
+                    label = { Text("¿Cómo se llama el ritual?") },
+                    placeholder = { Text("Ej: Yoga matutino") },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    textStyle = TextStyle(color = TextoGrisOscuro, fontSize = 16.sp)
+                )
+
+                OutlinedCard(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Rounded.AccessTime, null, tint = VerdeSalvia)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = if (selectedTime == null) "Sin hora establecida" else "Programado: ${selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                            color = TextoGrisOscuro
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (nombreRitual.isNotBlank()) onConfirm(nombreRitual, selectedTime)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
+                shape = RoundedCornerShape(16.dp),
+                enabled = nombreRitual.isNotBlank()
+            ) {
+                Text("Crear", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = TerracotaSuave) }
+        }
+    )
+
+    if (showTimePicker) {
+        AdaTimeWheelPickerDialog(
+            title = "Hora del Ritual",
+            initialTime = selectedTime ?: LocalTime.of(8, 0),
+            onDismiss = { showTimePicker = false },
+            onConfirm = { 
+                selectedTime = it
+                showTimePicker = false 
             }
         )
     }
@@ -345,6 +431,7 @@ fun WheelColumn(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
     
     Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+        // Marcador visual de selección
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -414,84 +501,6 @@ fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 data class CategoryItem(val name: String, val color: Color, val hex: String)
-
-@Composable
-fun AddBienestarDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String, Float) -> Unit
-) {
-    var tipo by remember { mutableStateOf("Hidratación") }
-    val tipos = listOf("Hidratación", "Pasos", "Sueño", "Skincare", "Lectura")
-    var valor by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
-
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = TextoGrisOscuro,
-        unfocusedTextColor = TextoGrisOscuro,
-        cursorColor = VerdeSalvia
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = BaseCrema,
-        shape = RoundedCornerShape(28.dp),
-        title = { Text("Registro de Bienestar", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box {
-                    OutlinedButton(
-                        onClick = { expanded = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextoGrisOscuro)
-                    ) {
-                        Text("Tipo: $tipo")
-                    }
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        tipos.forEach { t ->
-                            DropdownMenuItem(
-                                text = { Text(t) },
-                                onClick = {
-                                    tipo = t
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                OutlinedTextField(
-                    value = valor,
-                    onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) valor = it },
-                    label = { Text("Valor") },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    textStyle = TextStyle(color = TextoGrisOscuro)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val v = valor.toFloatOrNull()
-                    if (v != null) {
-                        onConfirm(tipo, v)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("Guardar", color = Color.White, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = TerracotaSuave)
-            }
-        }
-    )
-}
 
 @Composable
 fun AddNotaDialog(

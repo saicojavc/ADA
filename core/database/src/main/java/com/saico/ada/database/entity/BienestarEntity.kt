@@ -1,16 +1,21 @@
 package com.saico.ada.database.entity
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Entity(tableName = "bienestar_registros")
-data class BienestarEntity(
+@RequiresApi(Build.VERSION_CODES.O)
+data class BienestarEntity constructor(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val tipo: String,       // "Hidratación", "Pasos", "Skincare", "Sueño"
-    val valorActual: Float, // ej: 600 (ml) u 8000 (pasos)
-    val metaObjetivo: Float, // ej: 1000 (ml) o 10000 (pasos)
-    val unidad: String,     // "ml", "pasos", "horas"
+    val tipo: String,
+    val valorActual: Float,
+    val metaObjetivo: Float,
+    val unidad: String,
     val fecha: LocalDateTime = LocalDateTime.now(),
-    val iconoNombre: String // Referencia al icono (ej: "water_drop")
+    val iconoNombre: String,
+    val horaProgramada: LocalTime? = null // Nueva propiedad
 )
