@@ -35,7 +35,6 @@ fun AdaSpeedDialFab(
 ) {
     val actions = listOf(
         FabAction.Tarea,
-        FabAction.Cuidado,
         FabAction.Nota
     )
 
@@ -135,6 +134,5 @@ fun SpeedDialActionItem(
 
 sealed class FabAction(val label: String, val icon: ImageVector, val color: Color, val name: String) {
     object Tarea : FabAction("Nueva Tarea", Icons.Rounded.CheckCircle, Color(0xFF945FFB), "task")
-    object Cuidado : FabAction("Registro Aloe", Icons.Rounded.WaterDrop, VerdeSalvia, "care")
     object Nota : FabAction("Nota Rápida", Icons.Rounded.HistoryEdu, AmbarNeutro, "note")
 }

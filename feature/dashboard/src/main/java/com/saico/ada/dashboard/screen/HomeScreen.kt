@@ -3,7 +3,6 @@ package com.saico.ada.dashboard.screen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,13 +23,13 @@ import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.state.DashboardState
-import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.components.AdaSuggestionCard
 import com.saico.ada.ui.theme.*
 import com.saico.ada.ui.util.toComposeColor
+import kotlinx.coroutines.delay
 import java.time.LocalDate
-import java.time.LocalTime
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -41,6 +40,15 @@ fun HomeScreen(
     viewModel: DashboardViewModel
 ) {
     var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
+    
+    // Ticker para actualizar la hora cada minuto y forzar la recomposición
+    var currentTime by remember { mutableStateOf(LocalDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000 * 30) // Actualiza cada 30 segundos para ser preciso
+            currentTime = LocalDateTime.now()
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -68,32 +76,15 @@ fun HomeScreen(
         }
 
         if (uiState is DashboardState.Success) {
-            // Unificar Tareas y Rituales en una sola lista cronológica
-            val itemsTimeline = (uiState.tareasHoy.map { TimelineItemData.TaskItem(it) } + 
-                                uiState.ritualesHoy.filter { it.horaProgramada != null }.map { TimelineItemData.RitualItem(it) })
-                                .sortedBy { 
-                                    when(it) {
-                                        is TimelineItemData.TaskItem -> it.tarea.fechaHoraInicio.toLocalTime()
-                                        is TimelineItemData.RitualItem -> it.ritual.horaProgramada
-                                    }
-                                }
+            val tareasOrdenadas = uiState.tareasHoy.sortedBy { it.fechaHoraInicio.toLocalTime() }
 
-            items(itemsTimeline) { item ->
-                when(item) {
-                    is TimelineItemData.TaskItem -> {
-                        TimelineItem(
-                            tarea = item.tarea,
-                            onDelete = { viewModel.deleteTarea(item.tarea) },
-                            onEdit = { tareaToEdit = item.tarea }
-                        )
-                    }
-                    is TimelineItemData.RitualItem -> {
-                        RitualTimelineItem(
-                            ritual = item.ritual,
-                            onToggle = { viewModel.toggleRitual(item.ritual) }
-                        )
-                    }
-                }
+            items(tareasOrdenadas) { tarea ->
+                TimelineItem(
+                    tarea = tarea,
+                    currentTime = currentTime,
+                    onDelete = { viewModel.deleteTarea(tarea) },
+                    onEdit = { tareaToEdit = tarea }
+                )
             }
         } else {
             item {
@@ -105,77 +96,14 @@ fun HomeScreen(
     }
 
     if (tareaToEdit != null) {
-        AddTareaDialog(onDismiss = { tareaToEdit = null }, onConfirm = { viewModel.addTarea(it); tareaToEdit = null })
-    }
-}
-
-sealed class TimelineItemData {
-    data class TaskItem(val tarea: Tarea) : TimelineItemData()
-    data class RitualItem(val ritual: Bienestar) : TimelineItemData()
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun RitualTimelineItem(ritual: Bienestar, onToggle: () -> Unit) {
-    val isCompleted = ritual.valorActual >= ritual.metaObjetivo
-    val color = VerdeSalvia
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .alpha(if (isCompleted) 0.6f else 1f),
-        verticalAlignment = Alignment.Top
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(50.dp)) {
-            Text(
-                text = ritual.horaProgramada?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "--:--",
-                style = MaterialTheme.typography.labelMedium,
-                color = TextoGrisOscuro.copy(alpha = 0.5f),
-                textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
-            )
-            Box(modifier = Modifier.padding(top = 4.dp).width(2.dp).height(60.dp).background(color.copy(alpha = 0.2f)))
-        }
-
-        Card(
-            modifier = Modifier.weight(1f).padding(start = 8.dp).clickable { onToggle() },
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = if(isCompleted) VerdeSalviaClaro else BlancoPuro),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 2.dp)
-        ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    color = if(isCompleted) color else color.copy(alpha = 0.1f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = if(isCompleted) Icons.Rounded.Check else Icons.Rounded.Star,
-                        contentDescription = null,
-                        tint = if(isCompleted) Color.White else color,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = ritual.tipo,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextoGrisOscuro,
-                        textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                    )
-                    Text(
-                        text = "Ritual diario",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = color.copy(alpha = 0.7f)
-                    )
-                }
-                if (isCompleted) {
-                    Icon(Icons.Rounded.CheckCircle, null, tint = VerdeSalvia, modifier = Modifier.size(20.dp))
-                }
+        AddTareaDialog(
+            initialTarea = tareaToEdit,
+            onDismiss = { tareaToEdit = null },
+            onConfirm = { editedTarea ->
+                viewModel.addTarea(editedTarea)
+                tareaToEdit = null
             }
-        }
+        )
     }
 }
 
@@ -208,6 +136,7 @@ fun HeaderSection(nombre: String) {
 @Composable
 fun TimelineItem(
     tarea: Tarea,
+    currentTime: LocalDateTime,
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
@@ -215,17 +144,19 @@ fun TimelineItem(
     val icon = when (tarea.categoria) {
         "Trabajo" -> Icons.Rounded.BusinessCenter
         "Maternidad" -> Icons.Rounded.CheckCircle
+        "Bienestar" -> Icons.Rounded.SelfImprovement
         else -> Icons.Rounded.Home
     }
 
-    val isPast = tarea.fechaHoraFin.toLocalTime().isBefore(LocalTime.now())
+    // LÓGICA DE TACHADO: Si la hora de inicio es anterior a la hora actual del sistema
+    val isPast = tarea.fechaHoraInicio.isBefore(currentTime)
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .alpha(if (isPast) 0.5f else 1f),
+            .alpha(if (isPast) 0.6f else 1f),
         verticalAlignment = Alignment.Top
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(50.dp)) {
@@ -235,7 +166,13 @@ fun TimelineItem(
                 color = TextoGrisOscuro.copy(alpha = 0.5f),
                 textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
             )
-            Box(modifier = Modifier.padding(top = 4.dp).width(2.dp).height(60.dp).background(color.copy(alpha = 0.3f)))
+            Box(
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .width(2.dp)
+                    .height(60.dp)
+                    .background(if (isPast) color.copy(alpha = 0.2f) else color.copy(alpha = 0.3f))
+            )
         }
 
         Card(

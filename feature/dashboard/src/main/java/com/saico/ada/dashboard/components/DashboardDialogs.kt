@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -37,15 +38,16 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTareaDialog(
+    initialTarea: Tarea? = null,
     onDismiss: () -> Unit,
     onConfirm: (Tarea) -> Unit
 ) {
-    var titulo by remember { mutableStateOf("") }
-    var categoriaSelected by remember { mutableStateOf("Trabajo") }
+    var titulo by remember { mutableStateOf(initialTarea?.titulo ?: "") }
+    var categoriaSelected by remember { mutableStateOf(initialTarea?.categoria ?: "Trabajo") }
 
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var selectedStartTime by remember { mutableStateOf(LocalTime.now()) }
-    var selectedEndTime by remember { mutableStateOf(LocalTime.now().plusHours(1)) }
+    var selectedDate by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()) }
+    var selectedStartTime by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now().withSecond(0).withNano(0)) }
+    var selectedEndTime by remember { mutableStateOf(initialTarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1).withSecond(0).withNano(0)) }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
@@ -54,7 +56,8 @@ fun AddTareaDialog(
     val categorias = listOf(
         CategoryItem("Trabajo", AmbarNeutro, "#F2CC8F"),
         CategoryItem("Hogar", VerdeSalvia, "#81B29A"),
-        CategoryItem("Maternidad", TerracotaSuave, "#E07A5F")
+        CategoryItem("Maternidad", TerracotaSuave, "#E07A5F"),
+        CategoryItem("Bienestar", Color(0xFF945FFB), "#945FFB")
     )
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -69,7 +72,7 @@ fun AddTareaDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("Nueva Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        title = { Text(if (initialTarea == null) "Nueva Tarea" else "Editar Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -88,11 +91,11 @@ fun AddTareaDialog(
                 Column {
                     Text("Categoría", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
+                    LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        categorias.forEach { cat ->
+                        items(categorias) { cat ->
                             CategoryChip(
                                 item = cat,
                                 isSelected = categoriaSelected == cat.name,
@@ -144,12 +147,14 @@ fun AddTareaDialog(
                     if (titulo.isNotBlank()) {
                         onConfirm(
                             Tarea(
+                                id = initialTarea?.id ?: 0,
                                 titulo = titulo,
-                                descripcion = "",
+                                descripcion = initialTarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
                                 fechaHoraFin = LocalDateTime.of(selectedDate, selectedEndTime),
                                 categoria = selectedCat.name,
-                                colorHex = selectedCat.hex
+                                colorHex = selectedCat.hex,
+                                estaCompletada = initialTarea?.estaCompletada ?: false
                             )
                         )
                     }
@@ -157,7 +162,7 @@ fun AddTareaDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Guardar", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(if (initialTarea == null) "Guardar" else "Actualizar", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -184,8 +189,8 @@ fun AddTareaDialog(
             initialTime = selectedStartTime,
             onDismiss = { showStartTimePicker = false },
             onConfirm = { 
-                selectedStartTime = it
-                if (selectedEndTime.isBefore(it)) selectedEndTime = it.plusHours(1)
+                selectedStartTime = it.withSecond(0).withNano(0)
+                if (selectedEndTime.isBefore(selectedStartTime)) selectedEndTime = selectedStartTime.plusHours(1)
                 showStartTimePicker = false 
             }
         )
@@ -197,7 +202,7 @@ fun AddTareaDialog(
             initialTime = selectedEndTime,
             onDismiss = { showEndTimePicker = false },
             onConfirm = { 
-                selectedEndTime = it
+                selectedEndTime = it.withSecond(0).withNano(0)
                 showEndTimePicker = false 
             }
         )
@@ -282,10 +287,10 @@ fun AddBienestarDialog(
     if (showTimePicker) {
         AdaTimeWheelPickerDialog(
             title = "Hora del Ritual",
-            initialTime = selectedTime ?: LocalTime.of(8, 0),
+            initialTime = selectedTime ?: LocalTime.of(8, 0).withSecond(0).withNano(0),
             onDismiss = { showTimePicker = false },
             onConfirm = { 
-                selectedTime = it
+                selectedTime = it.withSecond(0).withNano(0)
                 showTimePicker = false 
             }
         )
@@ -326,19 +331,19 @@ fun AdaDatePickerWheelDialog(
                 ) {
                     WheelColumn(
                         items = (1..31).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedDay - 1,
+                        selectedIndex = (selectedDay - 1).coerceIn(0, 30),
                         onValueChange = { selectedDay = it + 1 },
                         modifier = Modifier.weight(1f)
                     )
                     WheelColumn(
                         items = months,
-                        selectedIndex = selectedMonth - 1,
+                        selectedIndex = (selectedMonth - 1).coerceIn(0, 11),
                         onValueChange = { selectedMonth = it + 1 },
                         modifier = Modifier.weight(1.2f)
                     )
                     WheelColumn(
                         items = years,
-                        selectedIndex = years.indexOf(selectedYear.toString()),
+                        selectedIndex = years.indexOf(selectedYear.toString()).coerceAtLeast(0),
                         onValueChange = { selectedYear = years[it].toInt() },
                         modifier = Modifier.weight(1.5f)
                     )
@@ -396,14 +401,14 @@ fun AdaTimeWheelPickerDialog(
                 ) {
                     WheelColumn(
                         items = (0..23).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedHour,
+                        selectedIndex = selectedHour.coerceIn(0, 23),
                         onValueChange = { selectedHour = it },
                         modifier = Modifier.weight(1f)
                     )
                     Text(":", style = MaterialTheme.typography.headlineLarge, color = TextoGrisOscuro)
                     WheelColumn(
                         items = (0..59).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedMinute,
+                        selectedIndex = selectedMinute.coerceIn(0, 59),
                         onValueChange = { selectedMinute = it },
                         modifier = Modifier.weight(1f)
                     )

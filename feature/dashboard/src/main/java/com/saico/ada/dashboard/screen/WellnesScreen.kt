@@ -5,11 +5,8 @@ import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,15 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,21 +39,31 @@ fun WellnessScreen(
 ) {
     val successState = uiState as? DashboardState.Success
     val registros = successState?.registrosBienestar ?: emptyList()
-    val ritualesHoy = successState?.ritualesHoy ?: emptyList()
 
-    // Cálculo de equilibrio dinámico basado en datos reales (Carga vs Recuperación)
+    // Cálculo de equilibrio basado en la distribución de carga del día
     val balanceScore = if (successState != null) {
-        val completedTasks = successState.tareasHoy.count { it.estaCompletada }.toFloat()
-        val totalTasks = successState.tareasHoy.size.coerceAtLeast(1).toFloat()
+        val tareas = successState.tareasHoy
         
-        // Rituales completados hoy
-        val completedRituals = ritualesHoy.count { it.valorActual >= it.metaObjetivo }.toFloat()
-        val totalRituals = ritualesHoy.size.coerceAtLeast(1).toFloat()
+        // Categorías de "Carga" (Responsabilidades)
+        val countCarga = tareas.count { it.categoria in listOf("Trabajo", "Hogar", "Maternidad") }
         
-        val loadScore = completedTasks / totalTasks
-        val recoveryScore = (completedRituals / totalRituals).coerceIn(0f, 1f)
+        // Categorías de "Bienestar" (Autocuidado)
+        val countBienestar = tareas.count { it.categoria == "Bienestar" }
         
-        ((loadScore + recoveryScore) / 2f * 100).toInt().coerceIn(0, 100)
+        val totalTareas = (countCarga + countBienestar).coerceAtLeast(1)
+        
+        // El equilibrio ideal es 50/50. 
+        // Calculamos cuánto se aleja la distribución actual de ese 50/50.
+        // Si tienes 5 de carga y 5 de bienestar, score = 100%
+        // Si tienes 10 de carga y 0 de bienestar, score = 0%
+        val ratioBienestar = countBienestar.toFloat() / totalTareas.toFloat()
+        
+        // El equilibrio máximo (100%) se alcanza cuando ratioBienestar es 0.5
+        // Usamos una función que penaliza el alejarse de ese 0.5
+        // score = 100 - (|0.5 - ratio| * 200)
+        val score = (100 - (kotlin.math.abs(0.5f - ratioBienestar) * 200)).toInt()
+        
+        score.coerceIn(0, 100)
     } else 0
 
     LazyColumn(
@@ -68,10 +72,6 @@ fun WellnessScreen(
     ) {
         item {
             WellnessHeaderOrganico(balanceScore)
-        }
-
-        item {
-            RitualsSection(ritualesHoy, viewModel)
         }
 
         item {
@@ -96,7 +96,6 @@ fun WellnessHeaderOrganico(score: Int) {
             animationSpec = infiniteRepeatable(tween(3000, easing = LinearOutSlowInEasing), RepeatMode.Reverse)
         )
 
-        // Fondo sólido para legibilidad perfecta sobre partículas
         Surface(
             modifier = Modifier
                 .size(210.dp * pulse)
@@ -142,98 +141,6 @@ fun WellnessHeaderOrganico(score: Int) {
                 }
             }
         }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun RitualsSection(ritualesHoy: List<Bienestar>, viewModel: DashboardViewModel) {
-    // Definición de iconos y colores sugeridos para el mapeo visual
-    val infoBase = mapOf(
-        "Baño de Luz" to RitualInfo(Icons.Rounded.LightMode, VerdeSalvia),
-        "Brain Dump" to RitualInfo(Icons.Rounded.Psychology, AmbarNeutro),
-        "Estiramiento" to RitualInfo(Icons.Rounded.SelfImprovement, TerracotaSuave),
-        "Lectura Cuentos" to RitualInfo(Icons.Rounded.ChildCare, Color(0xFFB39DDB))
-    )
-
-    Column(modifier = Modifier.padding(vertical = 24.dp)) {
-        Text(
-            "Tus Rituales", 
-            style = MaterialTheme.typography.titleLarge, 
-            modifier = Modifier.padding(start = 24.dp, bottom = 16.dp), 
-            fontFamily = FontFamily.Serif, 
-            color = TextoGrisOscuro,
-            fontWeight = FontWeight.Bold
-        )
-        
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(ritualesHoy) { ritual ->
-                val info = infoBase[ritual.tipo] ?: RitualInfo(Icons.Rounded.Star, VerdeSalvia)
-                RitualCircle(ritual, info) {
-                    viewModel.toggleRitual(ritual)
-                }
-            }
-        }
-    }
-}
-
-data class RitualInfo(val icon: ImageVector, val color: Color)
-
-@Composable
-fun RitualCircle(ritual: Bienestar, info: RitualInfo, onToggle: () -> Unit) {
-    val isCompleted = ritual.valorActual >= ritual.metaObjetivo
-    var pressProgress by remember { mutableStateOf(0f) }
-    val animatedProgress by animateFloatAsState(if (isCompleted) 1f else pressProgress)
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(75.dp)
-                .clip(CircleShape)
-                .background(if (isCompleted) info.color else BlancoPuro.copy(alpha = 0.8f))
-                .pointerInput(isCompleted) {
-                    detectTapGestures(
-                        onLongPress = { onToggle() },
-                        onPress = {
-                            if (!isCompleted) {
-                                pressProgress = 1f
-                                tryAwaitRelease()
-                                pressProgress = 0f
-                            }
-                        },
-                        onTap = {
-                            // Opción de marcar/desmarcar con toque simple también para comodidad
-                            onToggle()
-                        }
-                    )
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            if (!isCompleted && pressProgress > 0f) {
-                CircularProgressIndicator(
-                    progress = animatedProgress,
-                    color = info.color,
-                    modifier = Modifier.fillMaxSize(),
-                    strokeWidth = 4.dp
-                )
-            }
-            Icon(
-                info.icon, 
-                null, 
-                tint = if (isCompleted) Color.White else info.color.copy(alpha = 0.6f),
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Text(
-            ritual.tipo, 
-            style = MaterialTheme.typography.labelSmall, 
-            modifier = Modifier.padding(top = 8.dp), 
-            color = TextoGrisOscuro,
-            fontWeight = if (isCompleted) FontWeight.Bold else FontWeight.Medium
-        )
     }
 }
 

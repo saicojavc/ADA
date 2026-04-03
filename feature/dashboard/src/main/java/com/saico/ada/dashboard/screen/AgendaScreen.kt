@@ -24,9 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarToday
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DateRange
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -48,14 +47,13 @@ import com.saico.ada.dashboard.components.AnnualCalendarView
 import com.saico.ada.dashboard.components.MonthlyCalendarGrid
 import com.saico.ada.dashboard.components.ViewModeSelector
 import com.saico.ada.dashboard.components.WeeklyCalendarStrip
-import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.theme.TerracotaSuave
 import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
-import com.saico.ada.ui.theme.VerdeSalviaClaro
 import com.saico.ada.ui.util.toComposeColor
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -64,23 +62,16 @@ import java.util.Locale
 @Composable
 fun AgendaScreen(
     todasLasTareas: List<Tarea>,
-    ritualesAgenda: List<Bienestar>,
     selectedDate: LocalDate,
     agendaViewMode: AgendaViewMode,
     onDateSelected: (LocalDate) -> Unit,
-    onViewModeChanged: (AgendaViewMode) -> Unit,
-    onToggleRitual: (Bienestar) -> Unit
+    onViewModeChanged: (AgendaViewMode) -> Unit
 ) {
-    // Unificar Tareas y Rituales de la fecha seleccionada
-    val itemsAgenda = (todasLasTareas.filter { it.fechaHoraInicio.toLocalDate() == selectedDate }
-        .map { TimelineItemData.TaskItem(it) } +
-            ritualesAgenda.map { TimelineItemData.RitualItem(it) })
-        .sortedBy {
-            when (it) {
-                is TimelineItemData.TaskItem -> it.tarea.fechaHoraInicio.toLocalTime()
-                is TimelineItemData.RitualItem -> it.ritual.horaProgramada
-            }
-        }
+    // Solo Tareas de la fecha seleccionada
+    val itemsAgenda = todasLasTareas.filter { it.fechaHoraInicio.toLocalDate() == selectedDate }
+        .sortedBy { it.fechaHoraInicio.toLocalTime() }
+    
+    val now = LocalDateTime.now()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -123,79 +114,11 @@ fun AgendaScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)) }
         } else {
-            items(itemsAgenda) { item ->
-                when (item) {
-                    is TimelineItemData.TaskItem -> TareaAgendaCard(
-                        tarea = item.tarea,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                    )
-
-                    is TimelineItemData.RitualItem -> RitualAgendaCard(
-                        ritual = item.ritual,
-                        onToggle = { onToggleRitual(item.ritual) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun RitualAgendaCard(ritual: Bienestar, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    val isCompleted = ritual.valorActual >= ritual.metaObjetivo
-    val color = VerdeSalvia
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onToggle() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isCompleted) VerdeSalviaClaro else Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .height(IntrinsicSize.Min),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(4.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.4f))
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = ritual.tipo,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TextoGrisOscuro,
-                    textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                )
-                Text(
-                    text = "Ritual programado: ${
-                        ritual.horaProgramada?.format(
-                            DateTimeFormatter.ofPattern(
-                                "HH:mm"
-                            )
-                        )
-                    }",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextoGrisOscuro.copy(alpha = 0.6f)
-                )
-            }
-            if (isCompleted) {
-                Icon(Icons.Rounded.CheckCircle, null, tint = VerdeSalvia)
-            } else {
-                Icon(
-                    Icons.Rounded.RadioButtonUnchecked,
-                    null,
-                    tint = VerdeSalvia.copy(alpha = 0.3f)
+            items(itemsAgenda) { tarea ->
+                TareaAgendaCard(
+                    tarea = tarea,
+                    now = now,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                 )
             }
         }
@@ -246,15 +169,18 @@ fun AgendaDayHeader(date: LocalDate, taskCount: Int, modifier: Modifier = Modifi
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TareaAgendaCard(tarea: Tarea, modifier: Modifier = Modifier) {
+fun TareaAgendaCard(tarea: Tarea, now: LocalDateTime, modifier: Modifier = Modifier) {
     val color = tarea.colorHex.toComposeColor()
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    
+    // Cambiado para que compare con el inicio, igual que en Home, y sea consistente
+    val isPast = tarea.fechaHoraInicio.isBefore(now)
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().alpha(if (isPast) 0.6f else 1f),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPast) 0.dp else 1.dp)
     ) {
         Row(modifier = Modifier
             .padding(16.dp)
@@ -263,14 +189,15 @@ fun TareaAgendaCard(tarea: Tarea, modifier: Modifier = Modifier) {
                 .fillMaxHeight()
                 .width(4.dp)
                 .clip(CircleShape)
-                .background(color))
+                .background(if (isPast) color.copy(alpha = 0.4f) else color))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = tarea.titulo,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextoGrisOscuro
+                    color = TextoGrisOscuro,
+                    textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -288,7 +215,8 @@ fun TareaAgendaCard(tarea: Tarea, modifier: Modifier = Modifier) {
                             )
                         }",
                         style = MaterialTheme.typography.labelMedium,
-                        color = TextoGrisOscuro.copy(alpha = 0.6f)
+                        color = TextoGrisOscuro.copy(alpha = 0.6f),
+                        textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
             }
@@ -297,7 +225,7 @@ fun TareaAgendaCard(tarea: Tarea, modifier: Modifier = Modifier) {
                     text = tarea.categoria,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = color,
+                    color = if (isPast) color.copy(alpha = 0.6f) else color,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -334,7 +262,7 @@ fun EmptyDayState(modifier: Modifier = Modifier) {
             fontFamily = FontFamily.Serif
         )
         Text(
-            text = "No hay tareas ni rituales agendados para este día.",
+            text = "No hay tareas agendadas para este día.",
             style = MaterialTheme.typography.bodySmall,
             color = TextoGrisOscuro.copy(alpha = 0.5f),
             textAlign = TextAlign.Center
