@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:model"))
     implementation(project(":core:datastore"))
+    implementation(project(":core:notification"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -76,7 +77,6 @@ dependencies {
     implementation(libs.androidx.animation)
     implementation(libs.googleid)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.compose.ui.text)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 

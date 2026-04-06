@@ -18,8 +18,13 @@ class TareaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun upsertTarea(tarea: Tarea) {
-        tareaDao.insertTarea(tarea.toEntity())
+    override suspend fun upsertTarea(tarea: Tarea): Long {
+        return if (tarea.id == 0) {
+            tareaDao.insertTarea(tarea.toEntity())
+        } else {
+            tareaDao.updateTarea(tarea.toEntity())
+            tarea.id.toLong()
+        }
     }
 
     override suspend fun deleteTarea(tarea: Tarea) {

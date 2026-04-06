@@ -10,7 +10,7 @@ interface TareaDao {
     fun getAllTareas(): Flow<List<TareaEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTarea(tarea: TareaEntity)
+    suspend fun insertTarea(tarea: TareaEntity): Long // Ahora devuelve el ID generado
 
     @Update
     suspend fun updateTarea(tarea: TareaEntity)
