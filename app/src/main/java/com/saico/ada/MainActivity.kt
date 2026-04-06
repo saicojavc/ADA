@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.saico.ada.dashboard.navigation.dashboardGraph
+import com.saico.ada.onboarding.navigation.onboardingGraph
 import com.saico.ada.ui.navigation.Navigator
 import com.saico.ada.ui.theme.ADATheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,26 +35,28 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        // Aquí podrías manejar si el usuario deniega el permiso
+        // Manejar permiso denegado si es necesario
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Solicitar permiso de notificaciones para Android 13+
         checkNotificationPermission()
 
         setContent {
             ADATheme {
                 val navController = rememberNavController()
+                val startDestination = viewModel.firstScreen
 
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    MainContainer(
-                        startDestination = viewModel.firstScreen,
-                        navigator = navigator,
-                        navController = navController
-                    )
+                if (startDestination != null) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        MainContainer(
+                            startDestination = startDestination,
+                            navigator = navigator,
+                            navController = navController
+                        )
+                    }
                 }
             }
         }
@@ -85,6 +87,7 @@ private fun MainContainer(
             startDestination = startDestination,
         ) {
             dashboardGraph(navController = navController)
+            onboardingGraph(navController = navController)
         }
     }
 }

@@ -25,6 +25,7 @@ import com.saico.ada.dashboard.screen.HomeScreen
 import com.saico.ada.dashboard.screen.NotesScreen
 import com.saico.ada.dashboard.screen.WellnessScreen
 import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.ui.components.AdaGravityBackground
 import com.saico.ada.ui.components.AdaSpeedDialFab
 import com.saico.ada.ui.components.FabAction
 import java.time.LocalDate

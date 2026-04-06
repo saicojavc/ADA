@@ -1,5 +1,4 @@
-package com.saico.ada.core.notification.di
-
+package com.saico.ada.di
 
 import com.saico.ada.domain.alarm.AlarmScheduler
 import com.saico.ada.notification.AndroidAlarmScheduler
