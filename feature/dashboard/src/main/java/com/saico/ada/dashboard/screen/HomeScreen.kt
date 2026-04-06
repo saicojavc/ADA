@@ -122,7 +122,7 @@ fun HeaderSection(nombre: String, saludo: String) {
 
     Column(modifier = Modifier.padding(24.dp)) {
         Text(
-            text = "$saludo",
+            text = saludo,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold
