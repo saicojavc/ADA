@@ -213,7 +213,7 @@ MIT License — use it, build on it, make it yours.
 <br/>
 
 Built with 🌿 by **Jorge Adrián Valdés Camacho**
-[Portfolio](https://jorge-android-dev.web.app) · [GitHub](https://github.com/saicojavc) · [LinkedIn](https://linkedin.com/in/saicojavc)
+[Portfolio](https://jorge-android-dev.web.app) · [GitHub](https://github.com/saicojavc) · [LinkedIn]([https://linkedin.com/in/saicojavc](https://www.linkedin.com/in/jorge-adri%C3%A1n-vald%C3%A9s-camacho-21b371221/))
 
 <br/>
 
