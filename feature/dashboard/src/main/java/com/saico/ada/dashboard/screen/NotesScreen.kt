@@ -8,12 +8,15 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
@@ -44,15 +47,19 @@ fun NotesScreen(
         )
 
         if (uiState is DashboardState.Success) {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 12.dp
-            ) {
-                items(uiState.notas) { nota ->
-                    NoteCard(nota)
+            if (uiState.notas.isEmpty()) {
+                EmptyNotesState()
+            } else {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 12.dp
+                ) {
+                    items(uiState.notas) { nota ->
+                        NoteCard(nota)
+                    }
                 }
             }
         } else {
@@ -60,6 +67,38 @@ fun NotesScreen(
                 CircularProgressIndicator(color = VerdeSalvia)
             }
         }
+    }
+}
+
+@Composable
+fun EmptyNotesState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.EditNote,
+            contentDescription = null,
+            tint = VerdeSalvia.copy(alpha = 0.3f),
+            modifier = Modifier.size(100.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Tu muro de pensamientos está vacío.",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Usa el botón + para soltar tus ideas y liberar carga mental.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.4f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 

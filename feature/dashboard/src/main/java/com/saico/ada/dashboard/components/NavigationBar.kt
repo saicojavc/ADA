@@ -20,10 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.List
-import androidx.compose.material.icons.rounded.LocationOn
-import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,16 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.model.BottomAppBarItems
-import com.saico.ada.ui.R
-import com.saico.ada.ui.icon.AdaIcons
-import com.saico.ada.ui.theme.BaseCrema
 import com.saico.ada.ui.theme.TerracotaSuave
 import com.saico.ada.ui.theme.TextoGrisOscuro
 
@@ -51,10 +45,9 @@ fun NavigationBar(
     selectedBottomAppBarItem: BottomAppBarItems,
     onItemSelected: (BottomAppBarItems) -> Unit
 ) {
-    // 1. Contenedor con fondo crema para que combine con el resto de la app
     Box(
         modifier = Modifier
-            .fillMaxWidth() // Mismo fondo que el Dashboard
+            .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
@@ -62,9 +55,9 @@ fun NavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(72.dp)
-                .clip(RoundedCornerShape(32.dp)), // Estilo píldora suave
-            color = Color.White, // Fondo blanco puro para que resalte sobre el crema
-            tonalElevation = 4.dp, // Sombra muy sutil (no negra, sino gris suave)
+                .clip(RoundedCornerShape(32.dp)),
+            color = Color.White,
+            tonalElevation = 4.dp,
             shadowElevation = 8.dp
         ) {
             Row(
@@ -87,13 +80,13 @@ fun NavigationBar(
                 AdaNavItem(
                     isSelected = selectedBottomAppBarItem == BottomAppBarItems.WELLNES,
                     onClick = { onItemSelected(BottomAppBarItems.WELLNES) },
-                    icon = Icons.Rounded.LocationOn, //SelfCare
+                    icon = Icons.Rounded.Favorite, // Corregido: Icono de bienestar
                     label = "Bienestar"
                 )
                 AdaNavItem(
                     isSelected = selectedBottomAppBarItem == BottomAppBarItems.NOTES,
                     onClick = { onItemSelected(BottomAppBarItems.NOTES) },
-                    icon = Icons.Rounded.Notifications, //  Lightbulb Icono de ideas/notas
+                    icon = Icons.Rounded.Description, // Corregido: Icono de notas
                     label = "Notas"
                 )
             }
@@ -108,10 +101,8 @@ fun RowScope.AdaNavItem(
     icon: ImageVector,
     label: String
 ) {
-    // El color de ADA: Terracota si está seleccionado, Gris suave si no.
     val activeColor = TerracotaSuave
     val inactiveColor = TextoGrisOscuro.copy(alpha = 0.4f)
-
     val color = if (isSelected) activeColor else inactiveColor
 
     Column(
@@ -125,9 +116,6 @@ fun RowScope.AdaNavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Animación sutil de escala para que se sienta orgánico
-        val scale = if (isSelected) 1.2f else 1f
-
         Icon(
             imageVector = icon,
             contentDescription = label,
@@ -144,7 +132,6 @@ fun RowScope.AdaNavItem(
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
 
-        // Un pequeño punto indicador debajo del texto si está seleccionado
         if (isSelected) {
             Box(
                 modifier = Modifier
