@@ -1,7 +1,10 @@
 package com.saico.ada.database.di
 
 import com.saico.ada.database.AdaDatabase
+import com.saico.ada.database.dao.BienestarDao
 import com.saico.ada.database.dao.EventDao
+import com.saico.ada.database.dao.NotaDao
+import com.saico.ada.database.dao.TareaDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,4 +16,13 @@ object DaosModule {
 
     @Provides
     fun provideEventDao(database: AdaDatabase): EventDao = database.eventDao
+
+    @Provides
+    fun provideTareaDao(database: AdaDatabase): TareaDao = database.tareaDao
+
+    @Provides
+    fun provideBienestarDao(database: AdaDatabase): BienestarDao = database.bienestarDao
+
+    @Provides
+    fun provideNotaDao(database: AdaDatabase): NotaDao = database.notaDao
 }

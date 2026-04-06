@@ -4,9 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.com.google.ksp)
     alias(libs.plugins.com.dagger.hilt)
-    //    Firebase
-//    alias(libs.plugins.google.services)
-//    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -51,12 +48,12 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":core:model"))
+    implementation(project(":core:notification")) // Añadida dependencia necesaria
     implementation(project(":feature:dashboard"))
+    implementation(project(":feature:onboarding"))
 
-    //    firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
-
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

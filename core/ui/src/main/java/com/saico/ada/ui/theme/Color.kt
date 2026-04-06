@@ -1,7 +1,36 @@
 package com.saico.ada.ui.theme
 
+import androidx.compose.material3.Typography
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.saico.ada.ui.theme.Typography
+import java.time.format.TextStyle
 
+// Colores de ADA
+val BaseCrema = Color(0xFFFAF8F5)
+val TextoGrisOscuro = Color(0xFF3D405B)
+val TerracotaSuave = Color(0xFFE07A5F)
+val AmbarNeutro = Color(0xFFF2CC8F)
+val VerdeSalvia = Color(0xFF81B29A)
+val VerdeSalviaClaro = Color(0xFFF0F4F2) // Para fondos de tarjetas de sugerencia
+val BlancoPuro = Color(0xFFFFFFFF)
+
+// Tipografía (Asegúrate de tener fuentes Serif en tu proyecto)
+val AdaTypography = Typography(
+    displayMedium = androidx.compose.ui.text.TextStyle(
+        fontFamily = FontFamily.Serif, // O una fuente específica como Playfair Display
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+        color = TextoGrisOscuro
+    ),
+    bodyLarge = androidx.compose.ui.text.TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontSize = 16.sp,
+        color = TextoGrisOscuro
+    )
+)
 // ADA Warm Palette
 val Cream = Color(0xFFFAF8F5)
 val Terracotta = Color(0xFFE07A5F)
