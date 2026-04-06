@@ -2,7 +2,6 @@ package com.saico.ada.dashboard.components
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -86,18 +85,30 @@ private fun String.normalize(): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTareaDialog(
-    tarea: Tarea? = null, // Agregado para soportar edición
+    tarea: Tarea? = null, // Soporte para editar tarea existente
     isMother: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (Tarea) -> Unit
 ) {
-    // Inicialización de estados vinculada a la tarea recibida
+    // Los estados ahora se reinicializan si la tarea cambia (remember con llave 'tarea')
     var titulo by remember(tarea) { mutableStateOf(tarea?.titulo ?: "") }
     var categoriaSelected by remember(tarea) { mutableStateOf(tarea?.categoria ?: "Trabajo") }
 
-    var selectedDate by remember(tarea) { mutableStateOf(tarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()) }
-    var selectedStartTime by remember(tarea) { mutableStateOf(tarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now()) }
-    var selectedEndTime by remember(tarea) { mutableStateOf(tarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1)) }
+    var selectedDate by remember(tarea) {
+        mutableStateOf(
+            tarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()
+        )
+    }
+    var selectedStartTime by remember(tarea) {
+        mutableStateOf(
+            tarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now()
+        )
+    }
+    var selectedEndTime by remember(tarea) {
+        mutableStateOf(
+            tarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1)
+        )
+    }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
@@ -112,9 +123,8 @@ fun AddTareaDialog(
         baseCategorias.add(CategoryItem("Maternidad", TerracotaSuave, "#E07A5F"))
     }
 
-    // --- INTELIGENCIA ADA: Categorización Predictiva (Preservada intacta) ---
     LaunchedEffect(titulo) {
-        // Solo activamos la predicción si el usuario está escribiendo un nuevo título o modificando uno
+        // Solo activamos la predicción automática si estamos creando una tarea o el usuario cambia el título manual
         if (tarea == null || titulo != tarea.titulo) {
             val text = titulo.normalize()
 
@@ -219,10 +229,10 @@ fun AddTareaDialog(
 
             val candidatos = buildList {
                 if (isMother) add(CandidatoCategoria("Maternidad", palabrasMaternidad))
-                add(CandidatoCategoria("Trabajo",   palabrasTrabajo))
-                add(CandidatoCategoria("Hogar",     palabrasHogar))
+                add(CandidatoCategoria("Trabajo", palabrasTrabajo))
+                add(CandidatoCategoria("Hogar", palabrasHogar))
                 add(CandidatoCategoria("Bienestar", palabrasBienestar))
-                add(CandidatoCategoria("Personal",  palabrasPersonal))
+                add(CandidatoCategoria("Personal", palabrasPersonal))
             }
 
             val ganador = candidatos
@@ -251,7 +261,13 @@ fun AddTareaDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { Text(if (tarea == null) "Nueva Tarea" else "Editar Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        title = {
+            Text(
+                if (tarea == null) "Nueva Tarea" else "Editar Tarea",
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -336,7 +352,7 @@ fun AddTareaDialog(
                     if (titulo.isNotBlank()) {
                         onConfirm(
                             Tarea(
-                                id = tarea?.id ?: 0,
+                                id = tarea?.id ?: 0, // Preservamos ID original para actualización
                                 titulo = titulo,
                                 descripcion = tarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
