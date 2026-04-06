@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.datastore.UserPrefs
 import com.saico.ada.domain.alarm.AlarmScheduler
 import com.saico.ada.domain.use_case.AddBienestarUseCase
 import com.saico.ada.domain.use_case.AddNoteUseCase
@@ -35,7 +36,8 @@ class DashboardViewModel @Inject constructor(
     private val updateTaskUseCase: UpdateTaskUseCase,
     private val deleteEntityUseCase: DeleteEntityUseCase,
     private val addBienestarUseCase: AddBienestarUseCase,
-    private val alarmScheduler: AlarmScheduler
+    private val alarmScheduler: AlarmScheduler,
+    private val userPrefs: UserPrefs
 ) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -91,9 +93,19 @@ class DashboardViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     val state: StateFlow<DashboardState> = combine(
         getDashboardDataUseCase(),
-        _selectedAgendaDate
-    ) { data, agendaDate ->
+        _selectedAgendaDate,
+        userPrefs.userName,
+        userPrefs.isMother
+    ) { data, agendaDate, userName, isMother ->
         val today = LocalDate.now()
+        val now = LocalTime.now()
+
+        val greeting = when (now.hour) {
+            in 5..12 -> "Buenos días"
+            in 13..19 -> "Buenas tardes"
+            else -> "Buenas noches"
+        }
+        val fullGreeting = "$greeting, ${userName ?: ""}"
 
         val todosLosTiposDeRituales = (ritualesBase.map { it.tipo } +
                 data.registrosBienestar.filter { it.horaProgramada != null }.map { it.tipo })
@@ -122,7 +134,10 @@ class DashboardViewModel @Inject constructor(
             tareasAgenda = tareasAgenda,
             todasLasTareas = data.tareas,
             registrosBienestar = data.registrosBienestar,
-            notas = data.notas
+            notas = data.notas,
+            userName = userName ?: "Jorge",
+            greeting = fullGreeting,
+            isMother = isMother
         ) as DashboardState
     }
         .catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
@@ -183,7 +198,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val generatedId = updateTaskUseCase(tarea)
             val tareaWithId = tarea.copy(id = generatedId.toInt())
-            alarmScheduler.schedule(tareaWithId) // Ahora sí usamos el ID real de la BD
+            alarmScheduler.schedule(tareaWithId)
         }
     }
 

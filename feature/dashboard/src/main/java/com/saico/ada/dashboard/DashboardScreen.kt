@@ -82,7 +82,7 @@ fun Context(
                             selectedDate = agendaSelectedDate,
                             agendaViewMode = agendaViewMode,
                             onDateSelected = viewModel::onAgendaDateSelected,
-                            onViewModeChanged = viewModel::onAgendaViewModeChanged
+                            onViewModeChanged = viewModel::onAgendaViewModeChanged,
                         )
                         BottomAppBarItems.WELLNES -> WellnessScreen(uiState, viewModel)
                         BottomAppBarItems.NOTES -> NotesScreen(uiState, viewModel)
@@ -123,7 +123,9 @@ fun Context(
         }
 
         if (showAddTareaDialog) {
+            val isMother = (uiState as? DashboardState.Success)?.isMother ?: false
             AddTareaDialog(
+                isMother = isMother,
                 onDismiss = { showAddTareaDialog = false },
                 onConfirm = { tarea ->
                     viewModel.addTarea(tarea)
@@ -136,7 +138,7 @@ fun Context(
             AddBienestarDialog(
                 onDismiss = { showAddBienestarDialog = false },
                 onConfirm = { nombre, hora ->
-                    // viewModel.addRitualPersonalizado(nombre, hora) // Eliminado
+                    viewModel.addRitualPersonalizado(nombre, hora)
                     showAddBienestarDialog = false
                 }
             )

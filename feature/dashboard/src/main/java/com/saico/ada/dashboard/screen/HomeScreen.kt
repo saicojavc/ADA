@@ -3,6 +3,7 @@ package com.saico.ada.dashboard.screen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,7 +30,7 @@ import com.saico.ada.ui.theme.*
 import com.saico.ada.ui.util.toComposeColor
 import kotlinx.coroutines.delay
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -40,13 +41,14 @@ fun HomeScreen(
     viewModel: DashboardViewModel
 ) {
     var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
+    val successState = uiState as? DashboardState.Success
     
-    // Ticker para actualizar la hora cada minuto y forzar la recomposición
-    var currentTime by remember { mutableStateOf(LocalDateTime.now()) }
+    // Timer para refrescar el estado de "pasado" cada minuto
+    var currentTime by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000 * 30) // Actualiza cada 30 segundos para ser preciso
-            currentTime = LocalDateTime.now()
+        while(true) {
+            delay(1000 * 60) // 1 minuto
+            currentTime = LocalTime.now()
         }
     }
 
@@ -55,7 +57,10 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
-            HeaderSection(nombre = "Jorge")
+            HeaderSection(
+                nombre = successState?.userName ?: "Jorge",
+                saludo = successState?.greeting ?: "Buenos días"
+            )
         }
 
         item {
@@ -75,10 +80,10 @@ fun HomeScreen(
             )
         }
 
-        if (uiState is DashboardState.Success) {
-            val tareasOrdenadas = uiState.tareasHoy.sortedBy { it.fechaHoraInicio.toLocalTime() }
+        if (successState != null) {
+            val tareasHoy = successState.tareasHoy.sortedBy { it.fechaHoraInicio.toLocalTime() }
 
-            items(tareasOrdenadas) { tarea ->
+            items(tareasHoy) { tarea ->
                 TimelineItem(
                     tarea = tarea,
                     currentTime = currentTime,
@@ -97,7 +102,7 @@ fun HomeScreen(
 
     if (tareaToEdit != null) {
         AddTareaDialog(
-            initialTarea = tareaToEdit,
+            isMother = successState?.isMother ?: false,
             onDismiss = { tareaToEdit = null },
             onConfirm = { editedTarea ->
                 viewModel.addTarea(editedTarea)
@@ -109,7 +114,7 @@ fun HomeScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HeaderSection(nombre: String) {
+fun HeaderSection(nombre: String, saludo: String) {
     val currentDate = remember {
         val formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale("es", "ES"))
         LocalDate.now().format(formatter).replaceFirstChar { it.uppercase() }
@@ -117,7 +122,7 @@ fun HeaderSection(nombre: String) {
 
     Column(modifier = Modifier.padding(24.dp)) {
         Text(
-            text = "Buenos días, $nombre",
+            text = "$saludo",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold
@@ -136,7 +141,7 @@ fun HeaderSection(nombre: String) {
 @Composable
 fun TimelineItem(
     tarea: Tarea,
-    currentTime: LocalDateTime,
+    currentTime: LocalTime,
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
@@ -144,19 +149,18 @@ fun TimelineItem(
     val icon = when (tarea.categoria) {
         "Trabajo" -> Icons.Rounded.BusinessCenter
         "Maternidad" -> Icons.Rounded.CheckCircle
-        "Bienestar" -> Icons.Rounded.SelfImprovement
         else -> Icons.Rounded.Home
     }
 
-    // LÓGICA DE TACHADO: Si la hora de inicio es anterior a la hora actual del sistema
-    val isPast = tarea.fechaHoraInicio.isBefore(currentTime)
+    // Lógica corregida: Se tacha si la hora actual es mayor o IGUAL a la hora de fin
+    val isPast = currentTime.isAfter(tarea.fechaHoraFin.toLocalTime()) || currentTime == tarea.fechaHoraFin.toLocalTime()
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .alpha(if (isPast) 0.6f else 1f),
+            .alpha(if (isPast) 0.5f else 1f),
         verticalAlignment = Alignment.Top
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(50.dp)) {
@@ -166,13 +170,7 @@ fun TimelineItem(
                 color = TextoGrisOscuro.copy(alpha = 0.5f),
                 textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
             )
-            Box(
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .width(2.dp)
-                    .height(60.dp)
-                    .background(if (isPast) color.copy(alpha = 0.2f) else color.copy(alpha = 0.3f))
-            )
+            Box(modifier = Modifier.padding(top = 4.dp).width(2.dp).height(60.dp).background(color.copy(alpha = 0.3f)))
         }
 
         Card(

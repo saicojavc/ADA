@@ -11,7 +11,10 @@ sealed class DashboardState {
         val tareasAgenda: List<Tarea>,
         val todasLasTareas: List<Tarea>,
         val registrosBienestar: List<Bienestar>,
-        val notas: List<Nota>
+        val notas: List<Nota>,
+        val userName: String,
+        val greeting: String,
+        val isMother: Boolean // Nueva propiedad
     ) : DashboardState()
     data class Error(val message: String) : DashboardState()
 }

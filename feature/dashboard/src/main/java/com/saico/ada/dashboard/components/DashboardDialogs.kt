@@ -2,12 +2,24 @@ package com.saico.ada.dashboard.components
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,8 +27,25 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,7 +56,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.saico.ada.model.Tarea
-import com.saico.ada.ui.theme.*
+import com.saico.ada.ui.theme.AmbarNeutro
+import com.saico.ada.ui.theme.BaseCrema
+import com.saico.ada.ui.theme.TerracotaSuave
+import com.saico.ada.ui.theme.TextoGrisOscuro
+import com.saico.ada.ui.theme.VerdeSalvia
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -38,27 +71,34 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTareaDialog(
-    initialTarea: Tarea? = null,
+    isMother: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (Tarea) -> Unit
 ) {
-    var titulo by remember { mutableStateOf(initialTarea?.titulo ?: "") }
-    var categoriaSelected by remember { mutableStateOf(initialTarea?.categoria ?: "Trabajo") }
+    var titulo by remember { mutableStateOf("") }
+    var categoriaSelected by remember { mutableStateOf("Trabajo") }
 
-    var selectedDate by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()) }
-    var selectedStartTime by remember { mutableStateOf(initialTarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now().withSecond(0).withNano(0)) }
-    var selectedEndTime by remember { mutableStateOf(initialTarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1).withSecond(0).withNano(0)) }
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedStartTime by remember { mutableStateOf(LocalTime.now()) }
+    var selectedEndTime by remember { mutableStateOf(LocalTime.now().plusHours(1)) }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
 
-    val categorias = listOf(
+    // Lista de categorías dinámica: Trabajo, Hogar y BIENESTAR son fijas.
+    val baseCategorias = mutableListOf(
         CategoryItem("Trabajo", AmbarNeutro, "#F2CC8F"),
         CategoryItem("Hogar", VerdeSalvia, "#81B29A"),
-        CategoryItem("Maternidad", TerracotaSuave, "#E07A5F"),
-        CategoryItem("Bienestar", Color(0xFF945FFB), "#945FFB")
+        CategoryItem(
+            "Bienestar",
+            Color(0xFF945FFB),
+            "#945FFB"
+        ) // Restaurada con color violeta suave para distinguir de Hogar
     )
+    if (isMother) {
+        baseCategorias.add(CategoryItem("Maternidad", TerracotaSuave, "#E07A5F"))
+    }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = TextoGrisOscuro,
@@ -72,7 +112,7 @@ fun AddTareaDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { Text(if (initialTarea == null) "Nueva Tarea" else "Editar Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        title = { Text("Nueva Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -89,19 +129,27 @@ fun AddTareaDialog(
                 )
 
                 Column {
-                    Text("Categoría", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
+                    Text(
+                        "Categoría",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextoGrisOscuro.copy(alpha = 0.6f)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
+                    // Usamos un Row con scroll si hay muchas categorías
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(categorias) { cat ->
-                            CategoryChip(
-                                item = cat,
-                                isSelected = categoriaSelected == cat.name,
-                                onClick = { categoriaSelected = cat.name }
-                            )
+                        item {
+                            baseCategorias.forEach { cat ->
+                                CategoryChip(
+                                    item = cat,
+                                    isSelected = categoriaSelected == cat.name,
+                                    onClick = { categoriaSelected = cat.name }
+                                )
+                            }
                         }
+
                     }
                 }
 
@@ -118,7 +166,12 @@ fun AddTareaDialog(
                         Icon(Icons.Rounded.CalendarMonth, null, tint = VerdeSalvia)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale("es", "ES"))),
+                            text = selectedDate.format(
+                                DateTimeFormatter.ofPattern(
+                                    "EEEE, d 'de' MMMM",
+                                    Locale("es", "ES")
+                                )
+                            ),
                             color = TextoGrisOscuro
                         )
                     }
@@ -143,18 +196,16 @@ fun AddTareaDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val selectedCat = categorias.find { it.name == categoriaSelected }!!
+                    val selectedCat = baseCategorias.find { it.name == categoriaSelected }!!
                     if (titulo.isNotBlank()) {
                         onConfirm(
                             Tarea(
-                                id = initialTarea?.id ?: 0,
                                 titulo = titulo,
-                                descripcion = initialTarea?.descripcion ?: "",
+                                descripcion = "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
                                 fechaHoraFin = LocalDateTime.of(selectedDate, selectedEndTime),
                                 categoria = selectedCat.name,
-                                colorHex = selectedCat.hex,
-                                estaCompletada = initialTarea?.estaCompletada ?: false
+                                colorHex = selectedCat.hex
                             )
                         )
                     }
@@ -162,7 +213,7 @@ fun AddTareaDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text(if (initialTarea == null) "Guardar" else "Actualizar", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Guardar", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -176,9 +227,9 @@ fun AddTareaDialog(
         AdaDatePickerWheelDialog(
             initialDate = selectedDate,
             onDismiss = { showDatePicker = false },
-            onConfirm = { 
+            onConfirm = {
                 selectedDate = it
-                showDatePicker = false 
+                showDatePicker = false
             }
         )
     }
@@ -188,10 +239,10 @@ fun AddTareaDialog(
             title = "Hora de Inicio",
             initialTime = selectedStartTime,
             onDismiss = { showStartTimePicker = false },
-            onConfirm = { 
-                selectedStartTime = it.withSecond(0).withNano(0)
-                if (selectedEndTime.isBefore(selectedStartTime)) selectedEndTime = selectedStartTime.plusHours(1)
-                showStartTimePicker = false 
+            onConfirm = {
+                selectedStartTime = it
+                if (selectedEndTime.isBefore(it)) selectedEndTime = it.plusHours(1)
+                showStartTimePicker = false
             }
         )
     }
@@ -201,97 +252,9 @@ fun AddTareaDialog(
             title = "Hora de Fin",
             initialTime = selectedEndTime,
             onDismiss = { showEndTimePicker = false },
-            onConfirm = { 
-                selectedEndTime = it.withSecond(0).withNano(0)
-                showEndTimePicker = false 
-            }
-        )
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun AddBienestarDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String, LocalTime?) -> Unit
-) {
-    var nombreRitual by remember { mutableStateOf("") }
-    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
-    var showTimePicker by remember { mutableStateOf(false) }
-
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = TextoGrisOscuro,
-        unfocusedTextColor = TextoGrisOscuro,
-        focusedLabelColor = VerdeSalvia,
-        cursorColor = VerdeSalvia
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = BaseCrema,
-        shape = RoundedCornerShape(28.dp),
-        title = { Text("Nuevo Ritual Personalizado", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Dale un nombre a tu nuevo ritual y asígnale una hora para verlo en tu día.", 
-                    style = MaterialTheme.typography.bodyMedium, color = TextoGrisOscuro.copy(alpha = 0.7f))
-                
-                OutlinedTextField(
-                    value = nombreRitual,
-                    onValueChange = { nombreRitual = it },
-                    label = { Text("¿Cómo se llama el ritual?") },
-                    placeholder = { Text("Ej: Yoga matutino") },
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    textStyle = TextStyle(color = TextoGrisOscuro, fontSize = 16.sp)
-                )
-
-                OutlinedCard(
-                    onClick = { showTimePicker = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Rounded.AccessTime, null, tint = VerdeSalvia)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = if (selectedTime == null) "Sin hora establecida" else "Programado: ${selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm"))}",
-                            color = TextoGrisOscuro
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (nombreRitual.isNotBlank()) onConfirm(nombreRitual, selectedTime)
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
-                shape = RoundedCornerShape(16.dp),
-                enabled = nombreRitual.isNotBlank()
-            ) {
-                Text("Crear", color = Color.White, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = TerracotaSuave) }
-        }
-    )
-
-    if (showTimePicker) {
-        AdaTimeWheelPickerDialog(
-            title = "Hora del Ritual",
-            initialTime = selectedTime ?: LocalTime.of(8, 0).withSecond(0).withNano(0),
-            onDismiss = { showTimePicker = false },
-            onConfirm = { 
-                selectedTime = it.withSecond(0).withNano(0)
-                showTimePicker = false 
+            onConfirm = {
+                selectedEndTime = it
+                showEndTimePicker = false
             }
         )
     }
@@ -308,7 +271,8 @@ fun AdaDatePickerWheelDialog(
     var selectedMonth by remember { mutableIntStateOf(initialDate.monthValue) }
     var selectedYear by remember { mutableIntStateOf(initialDate.year) }
 
-    val months = listOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
+    val months =
+        listOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
     val years = (2024..2030).map { it.toString() }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -321,29 +285,36 @@ fun AdaDatePickerWheelDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Selecciona la fecha", style = MaterialTheme.typography.titleMedium, color = TextoGrisOscuro, fontWeight = FontWeight.Bold)
+                Text(
+                    "Selecciona la fecha",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextoGrisOscuro,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     WheelColumn(
                         items = (1..31).map { it.toString().padStart(2, '0') },
-                        selectedIndex = (selectedDay - 1).coerceIn(0, 30),
+                        selectedIndex = selectedDay - 1,
                         onValueChange = { selectedDay = it + 1 },
                         modifier = Modifier.weight(1f)
                     )
                     WheelColumn(
                         items = months,
-                        selectedIndex = (selectedMonth - 1).coerceIn(0, 11),
+                        selectedIndex = selectedMonth - 1,
                         onValueChange = { selectedMonth = it + 1 },
                         modifier = Modifier.weight(1.2f)
                     )
                     WheelColumn(
                         items = years,
-                        selectedIndex = years.indexOf(selectedYear.toString()).coerceAtLeast(0),
+                        selectedIndex = years.indexOf(selectedYear.toString()),
                         onValueChange = { selectedYear = years[it].toInt() },
                         modifier = Modifier.weight(1.5f)
                     )
@@ -356,7 +327,13 @@ fun AdaDatePickerWheelDialog(
                         try {
                             val finalDate = LocalDate.of(selectedYear, selectedMonth, 1)
                             val maxDay = finalDate.lengthOfMonth()
-                            onConfirm(LocalDate.of(selectedYear, selectedMonth, selectedDay.coerceIn(1, maxDay)))
+                            onConfirm(
+                                LocalDate.of(
+                                    selectedYear,
+                                    selectedMonth,
+                                    selectedDay.coerceIn(1, maxDay)
+                                )
+                            )
                         } catch (e: Exception) {
                             onConfirm(LocalDate.now())
                         }
@@ -391,24 +368,35 @@ fun AdaTimeWheelPickerDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = TextoGrisOscuro, fontWeight = FontWeight.Bold)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextoGrisOscuro,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     WheelColumn(
                         items = (0..23).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedHour.coerceIn(0, 23),
+                        selectedIndex = selectedHour,
                         onValueChange = { selectedHour = it },
                         modifier = Modifier.weight(1f)
                     )
-                    Text(":", style = MaterialTheme.typography.headlineLarge, color = TextoGrisOscuro)
+                    Text(
+                        ":",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = TextoGrisOscuro
+                    )
                     WheelColumn(
                         items = (0..59).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedMinute.coerceIn(0, 59),
+                        selectedIndex = selectedMinute,
                         onValueChange = { selectedMinute = it },
                         modifier = Modifier.weight(1f)
                     )
@@ -434,16 +422,15 @@ fun WheelColumn(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
-    
+
     Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-        // Marcador visual de selección
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(45.dp)
                 .background(VerdeSalvia.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
         )
-        
+
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -455,7 +442,7 @@ fun WheelColumn(
                 Text(
                     text = items[index],
                     style = if (isSelected) MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-                            else MaterialTheme.typography.bodyLarge,
+                    else MaterialTheme.typography.bodyLarge,
                     color = if (isSelected) VerdeSalvia else TextoGrisOscuro.copy(alpha = 0.3f),
                     modifier = Modifier
                         .padding(vertical = 8.dp)
@@ -476,11 +463,24 @@ fun TimeSelectionCard(label: String, time: LocalTime, modifier: Modifier, onClic
         colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = TextoGrisOscuro.copy(alpha = 0.6f))
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextoGrisOscuro.copy(alpha = 0.6f)
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.AccessTime, null, tint = VerdeSalvia, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Rounded.AccessTime,
+                    null,
+                    tint = VerdeSalvia,
+                    modifier = Modifier.size(16.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(time.format(DateTimeFormatter.ofPattern("HH:mm")), color = TextoGrisOscuro, fontWeight = FontWeight.Bold)
+                Text(
+                    time.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    color = TextoGrisOscuro,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -489,10 +489,13 @@ fun TimeSelectionCard(label: String, time: LocalTime, modifier: Modifier, onClic
 @Composable
 fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier.clickable { onClick() }.height(40.dp),
+        modifier = Modifier
+            .clickable { onClick() }
+            .height(40.dp)
+            .padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) item.color else item.color.copy(alpha = 0.15f),
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, item.color.copy(alpha = 0.3f))
+        border = if (isSelected) null else BorderStroke(1.dp, item.color.copy(alpha = 0.3f))
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
@@ -506,6 +509,107 @@ fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 data class CategoryItem(val name: String, val color: Color, val hex: String)
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun AddBienestarDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, LocalTime?) -> Unit
+) {
+    var nombreRitual by remember { mutableStateOf("") }
+    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = TextoGrisOscuro,
+        unfocusedTextColor = TextoGrisOscuro,
+        focusedLabelColor = VerdeSalvia,
+        cursorColor = VerdeSalvia
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BaseCrema,
+        shape = RoundedCornerShape(28.dp),
+        title = {
+            Text(
+                "Nuevo Ritual Personalizado",
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "Dale un nombre a tu nuevo ritual y asígnale una hora para verlo en tu día.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextoGrisOscuro.copy(alpha = 0.7f)
+                )
+
+                OutlinedTextField(
+                    value = nombreRitual,
+                    onValueChange = { nombreRitual = it },
+                    label = { Text("¿Cómo se llama el ritual?") },
+                    placeholder = { Text("Ej: Yoga matutino") },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    textStyle = TextStyle(color = TextoGrisOscuro, fontSize = 16.sp)
+                )
+
+                OutlinedCard(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Rounded.AccessTime, null, tint = VerdeSalvia)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = if (selectedTime == null) "Sin hora establecida" else "Programado: ${
+                                selectedTime?.format(
+                                    DateTimeFormatter.ofPattern("HH:mm")
+                                )
+                            }",
+                            color = TextoGrisOscuro
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (nombreRitual.isNotBlank()) onConfirm(nombreRitual, selectedTime)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
+                shape = RoundedCornerShape(16.dp),
+                enabled = nombreRitual.isNotBlank()
+            ) {
+                Text("Crear", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = TerracotaSuave) }
+        }
+    )
+
+    if (showTimePicker) {
+        AdaTimeWheelPickerDialog(
+            title = "Hora del Ritual",
+            initialTime = selectedTime ?: LocalTime.of(8, 0),
+            onDismiss = { showTimePicker = false },
+            onConfirm = {
+                selectedTime = it
+                showTimePicker = false
+            }
+        )
+    }
+}
 
 @Composable
 fun AddNotaDialog(
