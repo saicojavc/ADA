@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -67,37 +69,174 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+// ─────────────────────────────────────────────────────────────
+//  Utilidad de normalización
+//  Convierte "Réunión" → "reunion", "niño" → "nino", etc.
+// ─────────────────────────────────────────────────────────────
+private fun String.normalize(): String {
+    return this
+        .lowercase()
+        .replace('á', 'a').replace('é', 'e').replace('í', 'i')
+        .replace('ó', 'o').replace('ú', 'u').replace('ü', 'u')
+        .replace('ñ', 'n').replace('à', 'a').replace('è', 'e')
+        .replace('ì', 'i').replace('ò', 'o').replace('ù', 'u')
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTareaDialog(
+    tarea: Tarea? = null, // Agregado para soportar edición
     isMother: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (Tarea) -> Unit
 ) {
-    var titulo by remember { mutableStateOf("") }
-    var categoriaSelected by remember { mutableStateOf("Trabajo") }
+    // Inicialización de estados vinculada a la tarea recibida
+    var titulo by remember(tarea) { mutableStateOf(tarea?.titulo ?: "") }
+    var categoriaSelected by remember(tarea) { mutableStateOf(tarea?.categoria ?: "Trabajo") }
 
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var selectedStartTime by remember { mutableStateOf(LocalTime.now()) }
-    var selectedEndTime by remember { mutableStateOf(LocalTime.now().plusHours(1)) }
+    var selectedDate by remember(tarea) { mutableStateOf(tarea?.fechaHoraInicio?.toLocalDate() ?: LocalDate.now()) }
+    var selectedStartTime by remember(tarea) { mutableStateOf(tarea?.fechaHoraInicio?.toLocalTime() ?: LocalTime.now()) }
+    var selectedEndTime by remember(tarea) { mutableStateOf(tarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1)) }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
 
-    // Lista de categorías dinámica: Trabajo, Hogar y BIENESTAR son fijas.
     val baseCategorias = mutableListOf(
         CategoryItem("Trabajo", AmbarNeutro, "#F2CC8F"),
         CategoryItem("Hogar", VerdeSalvia, "#81B29A"),
-        CategoryItem(
-            "Bienestar",
-            Color(0xFF945FFB),
-            "#945FFB"
-        ) // Restaurada con color violeta suave para distinguir de Hogar
+        CategoryItem("Bienestar", Color(0xFF945FFB), "#945FFB")
     )
     if (isMother) {
         baseCategorias.add(CategoryItem("Maternidad", TerracotaSuave, "#E07A5F"))
+    }
+
+    // --- INTELIGENCIA ADA: Categorización Predictiva (Preservada intacta) ---
+    LaunchedEffect(titulo) {
+        // Solo activamos la predicción si el usuario está escribiendo un nuevo título o modificando uno
+        if (tarea == null || titulo != tarea.titulo) {
+            val text = titulo.normalize()
+
+            // ── helpers locales ──────────────────────────────────────────
+            fun List<String>.matchesAny() = any { text.contains(it.normalize()) }
+
+            // ── Diccionarios por categoría ───────────────────────────────
+
+            val palabrasMaternidad = listOf(
+                "bebe", "bebe", "nino", "nina", "hijo", "hija",
+                "hijos", "hijas", "recien nacido", "lactancia", "leche materna",
+                "biberon", "chupete", "cuna", "carrito", "cochecito",
+                "pañal", "panal", "pediatra", "guarderia", "jardin infantil",
+                "colegio", "escuela", "tarea escolar", "mochila", "uniforme",
+                "cumpleanos nino", "cumpleanos nina", "fiesta infantil",
+                "embarazo", "embarazada", "ecografia", "ultrasonido",
+                "obstetra", "ginecologo", "parto", "preparto", "posparto",
+                "cesarea", "semana de gestacion", "primer trimestre",
+                "nana", "bua", "berrinche", "rabieta", "siesta bebe",
+                "introduccion alimentaria", "papilla", "puré bebe",
+                "abuela cuida", "abuela bebe", "guarderia"
+            )
+
+            val palabrasTrabajo = listOf(
+                "reunion", "junta", "scrum", "daily", "standup", "sprint",
+                "retrospectiva", "planning", "one on one", "1 on 1",
+                "llamada de trabajo", "videollamada trabajo", "zoom work",
+                "meet work", "teams", "slack",
+                "cliente", "proyecto", "entregable", "deadline", "plazo",
+                "informe", "reporte", "presentacion trabajo", "propuesta",
+                "cotizacion", "factura", "cobro", "pago proveedor",
+                "contrato", "firma contrato", "revision codigo", "deploy",
+                "lanzamiento", "release", "soporte", "ticket", "incidencia",
+                "trabajo", "oficina", "office", "home office", "remoto",
+                "jefe", "jefa", "gerente", "director", "ceo", "rrhh",
+                "recursos humanos", "entrevista trabajo", "evaluacion",
+                "capacitacion", "formacion laboral", "curso trabajo",
+                "networking", "conferencia", "congreso", "taller profesional",
+                "workshop", "webinar", "seminario"
+            )
+
+            val palabrasHogar = listOf(
+                "limpiar", "limpeza", "barrer", "fregar", "trapear", "aspirar",
+                "ordenar", "organizar casa", "desinfectar", "lavar ropa",
+                "tender ropa", "planchar", "doblar ropa", "guardar ropa",
+                "cocinar", "receta", "preparar comida", "hornear", "amasar",
+                "descongelar", "marinar", "meal prep",
+                "compra", "compras", "supermercado", "mercado", "tienda",
+                "lista compras", "mandado", "verduleria", "carniceria",
+                "ferreteria", "farmacia hogar",
+                "reparar", "arreglar", "plomero", "electricista", "pintar casa",
+                "pared", "goteras", "fuga", "instalar", "montar mueble",
+                "ikea", "perforacion", "taladro", "tornillo",
+                "casa", "hogar", "habitacion", "cuarto", "bano", "cocina",
+                "jardin", "patio", "balcon", "terraza", "garage",
+                "perro", "gato", "mascota", "veterinario", "pasear perro",
+                "comida perro", "comida gato", "vacuna mascota"
+            )
+
+            val palabrasBienestar = listOf(
+                "yoga", "gym", "gimnasio", "ejercicio", "entrenamiento",
+                "crossfit", "pilates", "spinning", "nadar", "natacion",
+                "correr", "running", "caminar", "senderismo", "ciclismo",
+                "bicicleta", "pesas", "cardio", "estiramientos", "flexiones",
+                "abdominales", "zumba", "baile", "kickboxing", "boxeo",
+                "medico", "doctor", "cita medica", "consulta", "chequeo",
+                "analisis", "sangre", "presion arterial", "vacuna", "vacunacion",
+                "farmacia", "medicamento", "pastilla", "tratamiento", "terapia fisica",
+                "fisioterapia", "quiropraxia", "masaje", "acupuntura",
+                "dentista", "odontologo", "oculista", "optomentista",
+                "meditar", "meditacion", "mindfulness", "respiracion",
+                "psicologo", "psiquiatra", "terapia", "sesion terapia",
+                "diario emocional", "journaling", "gratitud",
+                "descanso", "dormir", "siesta", "nap", "descansar",
+                "relajar", "relajacion", "spa", "bano relajante",
+                "dieta", "nutricion", "nutricionista", "ayuno", "comer sano",
+                "ensalada", "proteina", "suplemento", "vitamina", "hidratacion",
+                "agua", "infusion", "batido saludable",
+                "piel", "skincare", "crema", "serum", "rutina facial",
+                "mascarilla", "protector solar", "hidratante", "peluqueria",
+                "corte pelo", "manicura", "pedicura",
+                "bienestar", "autocuidado", "autoestima", "habito saludable",
+                "reto saludable", "paso diario", "pasos"
+            )
+
+            val palabrasPersonal = listOf(
+                "banco", "transferencia", "pago", "factura personal",
+                "impuesto", "declaracion", "seguro", "poliza",
+                "inversion", "ahorro", "presupuesto",
+                "tramite", "cita gobierno", "cita banco", "renovar",
+                "pasaporte", "dni", "cedula", "licencia conducir",
+                "registro", "notaria", "abogado",
+                "amigo", "amiga", "cena", "comida con", "cafe con",
+                "cumpleanos", "aniversario", "boda", "evento",
+                "pelicula", "concierto", "teatro", "exposicion",
+                "viaje", "vuelo", "hotel", "reserva",
+                "leer", "libro", "curso", "aprender", "idioma",
+                "ingles", "podcast", "video tutorial"
+            )
+
+            data class CandidatoCategoria(val nombre: String, val palabras: List<String>)
+
+            val candidatos = buildList {
+                if (isMother) add(CandidatoCategoria("Maternidad", palabrasMaternidad))
+                add(CandidatoCategoria("Trabajo",   palabrasTrabajo))
+                add(CandidatoCategoria("Hogar",     palabrasHogar))
+                add(CandidatoCategoria("Bienestar", palabrasBienestar))
+                add(CandidatoCategoria("Personal",  palabrasPersonal))
+            }
+
+            val ganador = candidatos
+                .map { cat ->
+                    val hits = cat.palabras.count { kw -> text.contains(kw.normalize()) }
+                    cat to hits
+                }
+                .filter { (_, hits) -> hits > 0 }
+                .maxByOrNull { (_, hits) -> hits }
+
+            if (ganador != null) {
+                categoriaSelected = ganador.first.nombre
+            }
+        }
     }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -112,7 +251,7 @@ fun AddTareaDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("Nueva Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        title = { Text(if (tarea == null) "Nueva Tarea" else "Editar Tarea", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -130,26 +269,23 @@ fun AddTareaDialog(
 
                 Column {
                     Text(
-                        "Categoría",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextoGrisOscuro.copy(alpha = 0.6f)
+                        "Categoría sugerida",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = VerdeSalvia,
+                        fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    // Usamos un Row con scroll si hay muchas categorías
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        item {
-                            baseCategorias.forEach { cat ->
-                                CategoryChip(
-                                    item = cat,
-                                    isSelected = categoriaSelected == cat.name,
-                                    onClick = { categoriaSelected = cat.name }
-                                )
-                            }
+                        items(baseCategorias) { cat ->
+                            CategoryChip(
+                                item = cat,
+                                isSelected = categoriaSelected == cat.name,
+                                onClick = { categoriaSelected = cat.name }
+                            )
                         }
-
                     }
                 }
 
@@ -200,12 +336,14 @@ fun AddTareaDialog(
                     if (titulo.isNotBlank()) {
                         onConfirm(
                             Tarea(
+                                id = tarea?.id ?: 0,
                                 titulo = titulo,
-                                descripcion = "",
+                                descripcion = tarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
                                 fechaHoraFin = LocalDateTime.of(selectedDate, selectedEndTime),
                                 categoria = selectedCat.name,
-                                colorHex = selectedCat.hex
+                                colorHex = selectedCat.hex,
+                                estaCompletada = tarea?.estaCompletada ?: false
                             )
                         )
                     }
@@ -495,7 +633,10 @@ fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) item.color else item.color.copy(alpha = 0.15f),
-        border = if (isSelected) null else BorderStroke(1.dp, item.color.copy(alpha = 0.3f))
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
+            1.dp,
+            item.color.copy(alpha = 0.3f)
+        )
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(

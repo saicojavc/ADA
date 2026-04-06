@@ -43,11 +43,10 @@ fun HomeScreen(
     var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
     val successState = uiState as? DashboardState.Success
     
-    // Timer para refrescar el estado de "pasado" cada minuto
     var currentTime by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
         while(true) {
-            delay(1000 * 60) // 1 minuto
+            delay(1000 * 60)
             currentTime = LocalTime.now()
         }
     }
@@ -64,10 +63,20 @@ fun HomeScreen(
         }
 
         item {
-            AdaSuggestionCard(
-                mensaje = "Tienes un hueco de 25 min a las 11:00 AM.",
-                accion = "¿Es buen momento para tu rutina de Aloe?"
-            )
+            // --- INTELIGENCIA APLICADA EN LA CARD ---
+            if (successState != null) {
+                AdaSuggestionCard(
+                    mensaje = successState.adaSuggestion,
+                    accion = successState.adaAction,
+                    tipo = successState.suggestionType
+                )
+            } else {
+                // Placeholder mientras carga
+                AdaSuggestionCard(
+                    mensaje = "Analizando tu día...",
+                    accion = "ADA está preparando tus sugerencias."
+                )
+            }
         }
 
         item {
@@ -122,7 +131,7 @@ fun HeaderSection(nombre: String, saludo: String) {
 
     Column(modifier = Modifier.padding(24.dp)) {
         Text(
-            text = saludo,
+            text = "$saludo, $nombre",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold
@@ -149,10 +158,10 @@ fun TimelineItem(
     val icon = when (tarea.categoria) {
         "Trabajo" -> Icons.Rounded.BusinessCenter
         "Maternidad" -> Icons.Rounded.CheckCircle
+        "Bienestar" -> Icons.Rounded.SelfImprovement
         else -> Icons.Rounded.Home
     }
 
-    // Lógica corregida: Se tacha si la hora actual es mayor o IGUAL a la hora de fin
     val isPast = currentTime.isAfter(tarea.fechaHoraFin.toLocalTime()) || currentTime == tarea.fechaHoraFin.toLocalTime()
     var showMenu by remember { mutableStateOf(false) }
 
