@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -40,6 +41,7 @@ class StepCounterService : Service(), SensorEventListener {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private var initialSteps = -1f
+    private var lastRecordedDay: LocalDate? = null
 
     private val screenReceiver = object : BroadcastReceiver() {
         @RequiresApi(Build.VERSION_CODES.O)
@@ -59,8 +61,6 @@ class StepCounterService : Service(), SensorEventListener {
                             val diffMs = now - screenOffTime
                             val diffHours = diffMs / (1000f * 60 * 60)
                             
-                            // Heurística de sueño: si el teléfono estuvo inactivo > 3 horas
-                            // y se desbloquea entre las 5 AM y las 12 PM.
                             val currentHour = LocalDateTime.now().hour
                             if (diffHours >= 3f && currentHour in 5..12) {
                                 val hoy = LocalDateTime.now().toLocalDate()
@@ -70,7 +70,6 @@ class StepCounterService : Service(), SensorEventListener {
                                 }
                                 
                                 if (registroHoy != null) {
-                                    // Actualizamos solo si el nuevo cálculo es mayor (ej: despertó más tarde)
                                     if (diffHours > registroHoy.valorActual) {
                                         repository.insertRegistro(registroHoy.copy(valorActual = diffHours))
                                     }
@@ -121,14 +120,21 @@ class StepCounterService : Service(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let {
             val totalStepsSinceBoot = it.values[0]
+            val today = LocalDate.now()
             
+            // 1. Detección de cambio de día para resetear initialSteps
+            if (lastRecordedDay != null && lastRecordedDay != today) {
+                initialSteps = totalStepsSinceBoot
+            }
+            lastRecordedDay = today
+
             serviceScope.launch {
                 val registros = repository.getAllRegistros().first()
-                val hoy = LocalDateTime.now().toLocalDate()
                 val registroHoy = registros.find { r -> 
-                    r.tipo == "Pasos" && r.fecha.toLocalDate() == hoy 
+                    r.tipo == "Pasos" && r.fecha.toLocalDate() == today 
                 }
 
+                // 2. Inicialización o recuperación de la marca base
                 if (initialSteps == -1f) {
                     initialSteps = totalStepsSinceBoot - (registroHoy?.valorActual ?: 0f)
                 }
@@ -136,14 +142,16 @@ class StepCounterService : Service(), SensorEventListener {
                 val stepsToday = totalStepsSinceBoot - initialSteps
 
                 if (registroHoy != null) {
+                    // Actualizar solo si el contador aumentó
                     if (stepsToday > registroHoy.valorActual) {
                         repository.insertRegistro(registroHoy.copy(valorActual = stepsToday))
                     }
                 } else {
+                    // Nuevo día detectado por primera vez en la BD
                     repository.insertRegistro(
                         Bienestar(
                             tipo = "Pasos",
-                            valorActual = stepsToday,
+                            valorActual = if (stepsToday < 0) 0f else stepsToday,
                             metaObjetivo = 10000f,
                             unidad = "pasos",
                             fecha = LocalDateTime.now(),
