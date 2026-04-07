@@ -1,5 +1,6 @@
 package com.saico.ada.dashboard.screen
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -47,16 +48,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
+import com.saico.ada.dashboard.components.AdaSuggestionCard
 import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.model.Tarea
-import com.saico.ada.ui.components.AdaSuggestionCard
+import com.saico.ada.ui.R
 import com.saico.ada.ui.theme.BlancoPuro
 import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
@@ -65,7 +69,7 @@ import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.format.FormatStyle
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -90,28 +94,36 @@ fun HomeScreen(
     ) {
         item {
             HeaderSection(
-                saludo = successState?.greeting ?: "Buenos días"
+                saludoRes = successState?.greetingRes ?: R.string.home_greeting_morning,
+                userName = successState?.userName ?: ""
             )
         }
 
         item {
             if (successState != null) {
+                // Inteligencia ADA con traducción y argumentos
                 AdaSuggestionCard(
-                    mensaje = successState.adaSuggestion,
-                    accion = successState.adaAction,
+                    mensaje = stringResource(
+                        successState.adaSuggestionRes,
+                        *successState.adaSuggestionArgs.toTypedArray()
+                    ),
+                    accion = stringResource(
+                        successState.adaActionRes,
+                        *successState.adaActionArgs.toTypedArray()
+                    ),
                     tipo = successState.suggestionType
                 )
             } else {
                 AdaSuggestionCard(
-                    mensaje = "Analizando tu día...",
-                    accion = "ADA está preparando tus sugerencias."
+                    mensaje = stringResource(R.string.home_analyzing),
+                    accion = stringResource(R.string.home_preparing_suggestions)
                 )
             }
         }
 
         item {
             Text(
-                text = "Tu Día",
+                text = stringResource(R.string.home_your_day),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextoGrisOscuro,
@@ -121,9 +133,7 @@ fun HomeScreen(
 
         if (successState != null) {
             if (successState.tareasHoy.isEmpty()) {
-                item {
-                    EmptyDayState()
-                }
+                item { EmptyDayState() }
             } else {
                 val tareasHoy = successState.tareasHoy.sortedBy { it.fechaHoraInicio.toLocalTime() }
                 items(tareasHoy) { tarea ->
@@ -162,6 +172,36 @@ fun HomeScreen(
     }
 }
 
+@SuppressLint("LocalContextConfigurationRead")
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun HeaderSection(saludoRes: Int, userName: String) {
+    val context = LocalContext.current
+    val locale = context.resources.configuration.locales[0]
+
+    val currentDate = remember(locale) {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+            .withLocale(locale)
+        LocalDate.now().format(formatter).replaceFirstChar { it.uppercase() }
+    }
+
+    Column(modifier = Modifier.padding(24.dp)) {
+        Text(
+            text = stringResource(saludoRes, userName),
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold
+            ),
+            color = TextoGrisOscuro
+        )
+        Text(
+            text = currentDate,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.6f)
+        )
+    }
+}
+
 @Composable
 fun EmptyDayState() {
     Column(
@@ -178,13 +218,13 @@ fun EmptyDayState() {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Tu día está despejado.",
+            text = stringResource(R.string.home_empty_title),
             style = MaterialTheme.typography.titleMedium,
             color = TextoGrisOscuro.copy(alpha = 0.6f),
             textAlign = TextAlign.Center
         )
         Text(
-            text = "No tienes tareas pendientes. Disfruta de este espacio para ti.",
+            text = stringResource(R.string.home_empty_message),
             style = MaterialTheme.typography.bodyMedium,
             color = TextoGrisOscuro.copy(alpha = 0.4f),
             textAlign = TextAlign.Center,
@@ -195,42 +235,12 @@ fun EmptyDayState() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HeaderSection(saludo: String) {
-    val currentDate = remember {
-        val formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale("es", "ES"))
-        LocalDate.now().format(formatter).replaceFirstChar { it.uppercase() }
-    }
-
-    Column(modifier = Modifier.padding(24.dp)) {
-        Text(
-            text = saludo,
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold
-            ),
-            color = TextoGrisOscuro
-        )
-        Text(
-            text = currentDate,
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextoGrisOscuro.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun TimelineItem(
-    tarea: Tarea,
-    currentTime: LocalTime,
-    onDelete: () -> Unit,
-    onEdit: () -> Unit
-) {
+fun TimelineItem(tarea: Tarea, currentTime: LocalTime, onDelete: () -> Unit, onEdit: () -> Unit) {
     val color = tarea.colorHex.toComposeColor()
     val icon = when (tarea.categoria) {
-        "Trabajo" -> Icons.Rounded.BusinessCenter
-        "Maternidad" -> Icons.Rounded.CheckCircle
-        "Bienestar" -> Icons.Rounded.SelfImprovement
+        stringResource(R.string.cat_work) -> Icons.Rounded.BusinessCenter
+        stringResource(R.string.cat_maternity) -> Icons.Rounded.CheckCircle
+        stringResource(R.string.cat_wellbeing) -> Icons.Rounded.SelfImprovement
         else -> Icons.Rounded.Home
     }
 
@@ -242,8 +252,7 @@ fun TimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .alpha(if (isPast) 0.5f else 1f),
-        verticalAlignment = Alignment.Top
+            .alpha(if (isPast) 0.5f else 1f), verticalAlignment = Alignment.Top
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -304,12 +313,13 @@ fun TimelineItem(
                         textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
-
                 Box {
-                    IconButton(onClick = { showMenu = true }) {
+                    IconButton(onClick = {
+                        showMenu = true
+                    }) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = "Opciones",
+                            contentDescription = stringResource(R.string.action_options),
                             tint = TextoGrisOscuro.copy(alpha = 0.4f),
                             modifier = Modifier.size(20.dp)
                         )
@@ -320,12 +330,21 @@ fun TimelineItem(
                         modifier = Modifier.background(BlancoPuro)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Editar", color = TextoGrisOscuro) },
+                            text = {
+                                Text(
+                                    stringResource(R.string.action_edit),
+                                    color = TextoGrisOscuro
+                                )
+                            },
                             leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = VerdeSalvia) },
-                            onClick = { showMenu = false; onEdit() }
-                        )
+                            onClick = { showMenu = false; onEdit() })
                         DropdownMenuItem(
-                            text = { Text("Eliminar", color = Color.Red.copy(alpha = 0.7f)) },
+                            text = {
+                                Text(
+                                    stringResource(R.string.action_delete),
+                                    color = Color.Red.copy(alpha = 0.7f)
+                                )
+                            },
                             leadingIcon = {
                                 Icon(
                                     Icons.Rounded.Delete,
@@ -333,8 +352,7 @@ fun TimelineItem(
                                     tint = Color.Red.copy(alpha = 0.7f)
                                 )
                             },
-                            onClick = { showMenu = false; onDelete() }
-                        )
+                            onClick = { showMenu = false; onDelete() })
                     }
                 }
             }

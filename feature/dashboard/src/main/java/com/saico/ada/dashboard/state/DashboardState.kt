@@ -1,5 +1,6 @@
 package com.saico.ada.dashboard.state
 
+import androidx.annotation.StringRes
 import com.saico.ada.domain.use_case.SuggestionType
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Nota
@@ -14,11 +15,14 @@ sealed class DashboardState {
         val registrosBienestar: List<Bienestar>,
         val notas: List<Nota>,
         val userName: String,
-        val greeting: String,
+        @StringRes val greetingRes: Int, // Cambiado a Int para usar R.string
         val isMother: Boolean,
-        val adaSuggestion: String,
-        val adaAction: String,
-        val suggestionType: SuggestionType // Nuevo campo
+        val adaSuggestionRes: Int,
+        val adaActionRes: Int,
+        val adaSuggestionArgs: List<Any> = emptyList(),
+        val adaActionArgs: List<Any> = emptyList(),
+        val suggestionType: SuggestionType
     ) : DashboardState()
+
     data class Error(val message: String) : DashboardState()
 }

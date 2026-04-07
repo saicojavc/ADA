@@ -1,5 +1,177 @@
 <resources>
-    <string name="home">Home</string>
-    <string name="agenda">Agenda</string>
-    <string name="profile">Profile</string>
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_agenda">Agenda</string>
+    <string name="nav_wellness">Wellbeing</string>
+    <string name="nav_notes">Notes</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">Welcome to ADA</string>
+    <string name="onboarding_subtitle">Your personal LifeOS</string>
+    <string name="onboarding_name_label">What is your name?</string>
+    <string name="onboarding_occupation_label">What do you do?</string>
+    <string name="onboarding_mother_label">I am a mother</string>
+    <string name="onboarding_button">Start my journey</string>
+
+    <!-- Home -->
+    <string name="home_your_day">Your Day</string>
+    <string name="home_analyzing">Analyzing your day...</string>
+    <string name="home_preparing_suggestions">ADA is preparing your suggestions.</string>
+    <string name="home_empty_title">Your day is clear.</string>
+    <string name="home_empty_message">No pending tasks. Enjoy this space for yourself.</string>
+    <string name="home_greeting_morning">Good morning, %1$s</string>
+    <string name="home_greeting_afternoon">Good afternoon, %1$s</string>
+    <string name="home_greeting_evening">Good evening, %1$s</string>
+
+    <!-- Common Actions -->
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_options">Options</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_create">Create</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_close">Close</string>
+
+    <!-- FAB -->
+    <string name="fab_new_task">New Task</string>
+    <string name="fab_quick_note">Quick Note</string>
+    <string name="fab_close_menu">Close menu</string>
+    <string name="fab_add_new">Add new</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_new_task">New Task</string>
+    <string name="dialog_edit_task">Edit Task</string>
+    <string name="dialog_task_title_label">What is pending?</string>
+    <string name="dialog_category_label">Category</string>
+    <string name="dialog_suggested_category">Suggested category</string>
+    <string name="dialog_date_label">Date</string>
+    <string name="dialog_start_label">Start</string>
+    <string name="dialog_end_label">End</string>
+    <string name="dialog_new_ritual">New Daily Ritual</string>
+    <string name="dialog_ritual_hint">Name your ritual and assign a time to see it in your day.</string>
+    <string name="dialog_ritual_name_label">Ritual Name</string>
+    <string name="dialog_no_time">No time set (All day)</string>
+    <string name="dialog_scheduled_at">Scheduled: %1$s</string>
+    <string name="dialog_new_note">New Note</string>
+    <string name="dialog_note_title">Title</string>
+    <string name="dialog_note_content">Content</string>
+    <string name="dialog_select_date">Select date</string>
+    <string name="dialog_select_time">Select time</string>
+    <string name="dialog_select_hour">Select the hour</string>
+    <string name="dialog_unbalanced">UNBALANCED</string>
+
+    <!-- Wellness -->
+    <string name="wellness_title">Your Wellbeing</string>
+    <string name="wellness_balance">BALANCE</string>
+    <string name="wellness_rituals">Your Rituals</string>
+    <string name="wellness_rest">Rest</string>
+    <string name="wellness_movement">Movement</string>
+    <string name="wellness_steps_today">%1$d steps today</string>
+    <string name="wellness_ritual_daily">Daily ritual</string>
+    <string name="wellness_completed">Completed!</string>
+    <string name="wellness_pending">Pending ritual</string>
+    <string name="wellness_motivation">You are doing great! ADA is analyzing your daily balance.</string>
+    <string name="wellness_activate_counter">Tap here to activate the counter</string>
+    <string name="wellness_sleep_analysis">ADA is analyzing your screen usage to estimate your sleep.</string>
+    <string name="wellness_day">Day</string>
+    <string name="wellness_sunset">Sunset</string>
+    <string name="wellness_night">Night</string>
+
+    <!-- Agenda -->
+    <string name="agenda_free_day">Free day</string>
+    <string name="agenda_empty_message">No tasks or rituals scheduled for this day.</string>
+    <string name="agenda_items_count">%1$d items</string>
+    <string name="agenda_today_prefix">Today · %1$s</string>
+
+    <!-- Categories -->
+    <string name="cat_work">Work</string>
+    <string name="cat_home">Home</string>
+    <string name="cat_wellbeing">Wellbeing</string>
+    <string name="cat_maternity">Maternity</string>
+    <string name="cat_personal">Personal</string>
+
+    <!-- Notes -->
+    <string name="notes_title">My Thoughts</string>
+    <string name="notes_empty_title">Your wall of thoughts is empty.</string>
+    <string name="notes_empty_message">Use the + button to release your ideas and free up mental load.</string>
+
+    <!-- Months -->
+    <string name="month_jan">Jan</string>
+    <string name="month_feb">Feb</string>
+    <string name="month_mar">Mar</string>
+    <string name="month_apr">Apr</string>
+    <string name="month_may">May</string>
+    <string name="month_jun">Jun</string>
+    <string name="month_jul">Jul</string>
+    <string name="month_aug">Aug</string>
+    <string name="month_sep">Sep</string>
+    <string name="month_oct">Oct</string>
+    <string name="month_nov">Nov</string>
+    <string name="month_dec">Dec</string>
+
+    <!-- Notifications -->
+    <string name="notif_early_title">ADA: Task in 30 min</string>
+    <string name="notif_exact_title">ADA: It is time</string>
+    <string name="notif_channel_name">ADA Critical Alerts</string>
+
+    <!-- Inteligencia ADA - Carga -->
+    <string name="sug_load_vencidas_pendientes">You have %1$d overdue task(s) and %2$d pending.</string>
+    <string name="sug_load_vencidas_pendientes_action">ADA recommends: attend to overdue ones first and delegate 3.</string>
+    <string name="sug_load_vencidas_only">There are %1$d task(s) that have already passed their time.</string>
+    <string name="sug_load_vencidas_only_action">Review them now — are they still relevant?</string>
+    <string name="sug_load_high">You have %1$d tasks on the list today.</string>
+    <string name="sug_load_high_action">Choose your 3 most important. The rest can wait.</string>
+    <string name="sug_load_mid">Moderate load: %1$d tasks ahead.</string>
+    <string name="sug_load_mid_action">Sort them by impact before you start.</string>
+    <string name="sug_load_low">Light list today — %1$d task(s).</string>
+    <string name="sug_load_low_action">Take advantage of the slow pace to work with depth.</string>
+
+    <!-- Inteligencia ADA - Gaps -->
+    <string name="sug_gap_short">You have %1$d min before \'%2$s\'.</string>
+    <string name="sug_gap_short_action">Do something micro: reply to a message, drink water, stretch.</string>
+    <string name="sug_gap_ideal">%1$d free min before \'%2$s\'.</string>
+    <string name="sug_gap_ideal_action">Ideal gap for a short Pomodoro session. What do you want to advance?</string>
+    <string name="sug_gap_long">You have %1$d min until \'%2$s\'.</string>
+    <string name="sug_gap_long_action">Long block: enter deep work mode. Close notifications.</string>
+    <string name="sug_gap_far">Your next task, \'%1$s\', is still far away.</string>
+    <string name="sug_gap_far_action">No time pressure — plan the day calmly.</string>
+
+    <!-- Inteligencia ADA - Franja Horaria -->
+    <string name="sug_time_early">The day has just begun.</string>
+    <string name="sug_time_early_action">Activate the body before the mind — 5 min of movement.</string>
+    <string name="sug_time_morning">Early morning: your brain is at its best.</string>
+    <string name="sug_time_morning_action">Attack the hardest task now, before interruptions arrive.</string>
+    <string name="sug_time_peak">Cognitive peak. Time for deep work.</string>
+    <string name="sug_time_peak_action">Deep work mode: silence everything and enter flow.</string>
+    <string name="sug_time_noon">Midday break.</string>
+    <string name="sug_time_noon_action">Eat without screens and remember to hydrate well.</string>
+    <string name="sug_time_afternoon">Afternoon valley — low energy.</string>
+    <string name="sug_time_afternoon_action">A 10-20 min nap or a short walk will reverse it.</string>
+    <string name="sug_time_late">Second peak of the afternoon.</string>
+    <string name="sug_time_late_action">Good time for meetings, reviews or creative tasks.</string>
+    <string name="sug_time_end">The productive day ends.</string>
+    <string name="sug_time_end_action">Close pending items and prepare your list for tomorrow.</string>
+    <string name="sug_time_night">Time to disconnect.</string>
+    <string name="sug_time_night_action">Quick brain dump: empty your mind before sleeping.</string>
+    <string name="sug_time_sleep">You should be resting.</string>
+    <string name="sug_time_sleep_action">Sleep — your productivity tomorrow depends on this.</string>
+
+    <!-- Inteligencia ADA - Bienestar -->
+    <string name="sug_well_zero">You haven\'t checked off anything today yet.</string>
+    <string name="sug_well_zero_action">Start with the smallest task — momentum starts with one.</string>
+    <string name="sug_well_high">You have completed %1$d of %2$d tasks today.</string>
+    <string name="sug_well_high_action">You are crushing it. Take a moment to recognize it.</string>
+    <string name="sug_well_mid">You are halfway through — %1$d of %2$d lists.</string>
+    <string name="sug_well_mid_action">Good pace. Keep focus on the next most important ones.</string>
+    <string name="sug_well_low">There is still ground to cover today.</string>
+    <string name="sug_well_low_action">One task at a time. What is the next concrete action?</string>
+
+    <!-- Inteligencia ADA - Momentum -->
+    <string name="sug_mom_high">¡%1$d consecutive active days!</string>
+    <string name="sug_mom_high_action">You are unstoppable. Protect that streak — do at least one task today.</string>
+    <string name="sug_mom_mid">%1$d days in a row moving forward.</string>
+    <string name="sug_mom_mid_action">The habit is forming. Don\'t break the chain.</string>
+    <string name="sug_mom_low">You have been active for %1$d days.</string>
+    <string name="sug_mom_low_action">Good start to the streak. Keep it up.</string>
 </resources>

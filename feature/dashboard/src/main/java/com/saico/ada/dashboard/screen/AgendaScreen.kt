@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +53,7 @@ import com.saico.ada.ui.theme.TerracotaSuave
 import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
+import com.saico.ada.ui.R
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -67,7 +69,6 @@ fun AgendaScreen(
     onDateSelected: (LocalDate) -> Unit,
     onViewModeChanged: (AgendaViewMode) -> Unit
 ) {
-    // Solo Tareas de la fecha seleccionada
     val itemsAgenda = todasLasTareas.filter { it.fechaHoraInicio.toLocalDate() == selectedDate }
         .sortedBy { it.fechaHoraInicio.toLocalTime() }
     
@@ -81,45 +82,21 @@ fun AgendaScreen(
 
         item {
             when (agendaViewMode) {
-                AgendaViewMode.SEMANAL -> WeeklyCalendarStrip(
-                    selectedDate = selectedDate,
-                    tareas = todasLasTareas,
-                    onDateSelected = onDateSelected
-                )
-
-                AgendaViewMode.MENSUAL -> MonthlyCalendarGrid(
-                    selectedDate = selectedDate,
-                    tareas = todasLasTareas,
-                    onDateSelected = onDateSelected
-                )
-
-                AgendaViewMode.ANUAL -> AnnualCalendarView(
-                    selectedDate = selectedDate,
-                    tareas = todasLasTareas,
-                    onDateSelected = onDateSelected,
-                    onSwitchToMonthly = { onViewModeChanged(AgendaViewMode.MENSUAL) })
+                AgendaViewMode.SEMANAL -> WeeklyCalendarStrip(selectedDate = selectedDate, tareas = todasLasTareas, onDateSelected = onDateSelected)
+                AgendaViewMode.MENSUAL -> MonthlyCalendarGrid(selectedDate = selectedDate, tareas = todasLasTareas, onDateSelected = onDateSelected)
+                AgendaViewMode.ANUAL -> AnnualCalendarView(selectedDate = selectedDate, tareas = todasLasTareas, onDateSelected = onDateSelected, onSwitchToMonthly = { onViewModeChanged(AgendaViewMode.MENSUAL) })
             }
         }
 
         item {
-            AgendaDayHeader(
-                date = selectedDate,
-                taskCount = itemsAgenda.size,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-            )
+            AgendaDayHeader(date = selectedDate, taskCount = itemsAgenda.size, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
         }
 
         if (itemsAgenda.isEmpty()) {
-            item { EmptyDayState(modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)) }
+            item { EmptyDayState(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) }
         } else {
             items(itemsAgenda) { tarea ->
-                TareaAgendaCard(
-                    tarea = tarea,
-                    now = now,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
+                TareaAgendaCard(tarea = tarea, now = now, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
             }
         }
     }
@@ -129,39 +106,24 @@ fun AgendaScreen(
 @Composable
 fun AgendaDayHeader(date: LocalDate, taskCount: Int, modifier: Modifier = Modifier) {
     val es = Locale("es")
-    val dayName =
-        date.dayOfWeek.getDisplayName(TextStyle.FULL, es).replaceFirstChar { it.uppercase() }
+    val dayName = date.dayOfWeek.getDisplayName(TextStyle.FULL, es).replaceFirstChar { it.uppercase() }
     val dateFormatted = date.format(DateTimeFormatter.ofPattern("d 'de' MMMM", es))
     val isToday = date == LocalDate.now()
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Column {
             Text(
-                text = if (isToday) "Hoy · $dayName" else dayName,
+                text = if (isToday) stringResource(R.string.agenda_today_prefix, dayName) else dayName,
                 style = MaterialTheme.typography.titleMedium,
                 color = TextoGrisOscuro,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Serif
             )
-            Text(
-                text = dateFormatted.replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.bodySmall,
-                color = TextoGrisOscuro.copy(alpha = 0.5f)
-            )
+            Text(text = dateFormatted.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall, color = TextoGrisOscuro.copy(alpha = 0.5f))
         }
         if (taskCount > 0) {
             Surface(shape = CircleShape, color = TerracotaSuave.copy(alpha = 0.12f)) {
-                Text(
-                    text = "$taskCount items",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TerracotaSuave,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = stringResource(R.string.agenda_items_count, taskCount), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium, color = TerracotaSuave, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -172,62 +134,23 @@ fun AgendaDayHeader(date: LocalDate, taskCount: Int, modifier: Modifier = Modifi
 fun TareaAgendaCard(tarea: Tarea, now: LocalDateTime, modifier: Modifier = Modifier) {
     val color = tarea.colorHex.toComposeColor()
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    
-    // Cambiado para que compare con el inicio, igual que en Home, y sea consistente
     val isPast = tarea.fechaHoraInicio.isBefore(now)
 
-    Card(
-        modifier = modifier.fillMaxWidth().alpha(if (isPast) 0.6f else 1f),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isPast) 0.dp else 1.dp)
-    ) {
-        Row(modifier = Modifier
-            .padding(16.dp)
-            .height(IntrinsicSize.Min)) {
-            Box(modifier = Modifier
-                .fillMaxHeight()
-                .width(4.dp)
-                .clip(CircleShape)
-                .background(if (isPast) color.copy(alpha = 0.4f) else color))
+    Card(modifier = modifier.fillMaxWidth().alpha(if (isPast) 0.6f else 1f), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = if (isPast) 0.dp else 1.dp)) {
+        Row(modifier = Modifier.padding(16.dp).height(IntrinsicSize.Min)) {
+            Box(modifier = Modifier.fillMaxHeight().width(4.dp).clip(CircleShape).background(if (isPast) color.copy(alpha = 0.4f) else color))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = tarea.titulo,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TextoGrisOscuro,
-                    textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
-                )
+                Text(text = tarea.titulo, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextoGrisOscuro, textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Rounded.DateRange,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = TextoGrisOscuro.copy(alpha = 0.5f)
-                    )
+                    Icon(imageVector = Icons.Rounded.DateRange, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextoGrisOscuro.copy(alpha = 0.5f))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${tarea.fechaHoraInicio.format(timeFormatter)} – ${
-                            tarea.fechaHoraFin.format(
-                                timeFormatter
-                            )
-                        }",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextoGrisOscuro.copy(alpha = 0.6f),
-                        textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
-                    )
+                    Text(text = "${tarea.fechaHoraInicio.format(timeFormatter)} – ${tarea.fechaHoraFin.format(timeFormatter)}", style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.6f), textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None)
                 }
             }
             Surface(color = color.copy(alpha = 0.1f), shape = CircleShape) {
-                Text(
-                    text = tarea.categoria,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isPast) color.copy(alpha = 0.6f) else color,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = tarea.categoria, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = if (isPast) color.copy(alpha = 0.6f) else color, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -235,37 +158,11 @@ fun TareaAgendaCard(tarea: Tarea, now: LocalDateTime, modifier: Modifier = Modif
 
 @Composable
 fun EmptyDayState(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = VerdeSalvia.copy(alpha = 0.1f),
-            modifier = Modifier.size(72.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.CalendarToday,
-                    contentDescription = null,
-                    tint = VerdeSalvia,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
+    Column(modifier = modifier.padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(shape = CircleShape, color = VerdeSalvia.copy(alpha = 0.1f), modifier = Modifier.size(72.dp)) {
+            Box(contentAlignment = Alignment.Center) { Icon(imageVector = Icons.Rounded.CalendarToday, contentDescription = null, tint = VerdeSalvia, modifier = Modifier.size(36.dp)) }
         }
-        Text(
-            text = "Día libre",
-            style = MaterialTheme.typography.titleMedium,
-            color = TextoGrisOscuro,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Serif
-        )
-        Text(
-            text = "No hay tareas agendadas para este día.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextoGrisOscuro.copy(alpha = 0.5f),
-            textAlign = TextAlign.Center
-        )
+        Text(text = stringResource(R.string.agenda_free_day), style = MaterialTheme.typography.titleMedium, color = TextoGrisOscuro, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif)
+        Text(text = stringResource(R.string.agenda_empty_message), style = MaterialTheme.typography.bodySmall, color = TextoGrisOscuro.copy(alpha = 0.5f), textAlign = TextAlign.Center)
     }
 }

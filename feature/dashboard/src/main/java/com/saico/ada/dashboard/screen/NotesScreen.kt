@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,6 +26,7 @@ import com.saico.ada.model.Nota
 import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
+import com.saico.ada.ui.R
 import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -37,7 +39,7 @@ fun NotesScreen(
         modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            text = "Mis Pensamientos",
+            text = stringResource(R.string.notes_title),
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold
@@ -87,13 +89,13 @@ fun EmptyNotesState() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Tu muro de pensamientos está vacío.",
+            text = stringResource(R.string.notes_empty_title),
             style = MaterialTheme.typography.titleMedium,
             color = TextoGrisOscuro.copy(alpha = 0.6f),
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Usa el botón + para soltar tus ideas y liberar carga mental.",
+            text = stringResource(R.string.notes_empty_message),
             style = MaterialTheme.typography.bodyMedium,
             color = TextoGrisOscuro.copy(alpha = 0.4f),
             textAlign = TextAlign.Center,
