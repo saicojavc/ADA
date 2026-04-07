@@ -7,7 +7,6 @@ import com.saico.ada.model.TareaExcepcion
 import com.saico.ada.model.TipoRepeticion
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import javax.inject.Inject
 
 class GenerateTareaInstancesUseCase @Inject constructor() {
@@ -50,8 +49,14 @@ class GenerateTareaInstancesUseCase @Inject constructor() {
                 colorHex = plantilla.colorHex,
                 estaCompletada = excepcion?.estaCompletada ?: false,
                 esPrioridadIA = plantilla.esPrioridadIA,
-                esPlantilla = false,
-                plantillaId = plantilla.id
+                esPlantilla = true, // Marcamos como true para que el diálogo de edición active el switch de repetición
+                plantillaId = plantilla.id,
+                tipoRepeticion = plantilla.tipoRepeticion,
+                diasRepeticion = plantilla.diasRepeticion,
+                horaInicio = plantilla.horaInicio,
+                duracionMinutos = plantilla.duracionMinutos,
+                fechaInicioRepeticion = plantilla.fechaInicioRepeticion,
+                fechaFinRepeticion = plantilla.fechaFinRepeticion
             )
         }
     }

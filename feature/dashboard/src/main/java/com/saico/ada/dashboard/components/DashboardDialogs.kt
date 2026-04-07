@@ -62,7 +62,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -85,7 +84,6 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
-import java.util.Locale
 import java.time.format.TextStyle as JavaTextStyle
 
 // ─────────────────────────────────────────────────────────────
@@ -529,9 +527,16 @@ fun AddTareaDialog(
                     if (titulo.isNotBlank()) {
                         val duracion =
                             ChronoUnit.MINUTES.between(selectedStartTime, selectedEndTime).toInt()
+
+                        val targetId = if (tarea?.plantillaId != null && tarea.plantillaId != 0) {
+                            tarea.plantillaId!!
+                        } else {
+                            tarea?.id ?: 0
+                        }
+
                         onConfirm(
                             Tarea(
-                                id = tarea?.id ?: 0,
+                                id = targetId,
                                 titulo = titulo,
                                 descripcion = tarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),

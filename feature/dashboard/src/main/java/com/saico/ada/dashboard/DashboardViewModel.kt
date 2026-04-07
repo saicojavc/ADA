@@ -8,13 +8,31 @@ import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.datastore.UserPrefs
 import com.saico.ada.domain.alarm.AlarmScheduler
 import com.saico.ada.domain.repository.TareaExcepcionRepository
-import com.saico.ada.domain.use_case.*
-import com.saico.ada.model.*
+import com.saico.ada.domain.use_case.AddBienestarUseCase
+import com.saico.ada.domain.use_case.AddNoteUseCase
+import com.saico.ada.domain.use_case.DeleteEntityUseCase
+import com.saico.ada.domain.use_case.GenerateTareaInstancesUseCase
+import com.saico.ada.domain.use_case.GetDashboardDataUseCase
+import com.saico.ada.domain.use_case.GetSmartSuggestionUseCase
+import com.saico.ada.domain.use_case.MarcarTareaCompletadaUseCase
+import com.saico.ada.domain.use_case.UpdateTaskUseCase
+import com.saico.ada.model.Bienestar
+import com.saico.ada.model.Nota
+import com.saico.ada.model.Tarea
+import com.saico.ada.model.TareaExcepcion
 import com.saico.ada.ui.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 
@@ -35,6 +53,7 @@ class DashboardViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val _selectedAgendaDate = MutableStateFlow(LocalDate.now())
+
     @RequiresApi(Build.VERSION_CODES.O)
     val selectedAgendaDate: StateFlow<LocalDate> = _selectedAgendaDate.asStateFlow()
 
@@ -54,33 +73,37 @@ class DashboardViewModel @Inject constructor(
             else -> R.string.home_greeting_evening
         }
 
-        // --- EXPANSIÓN DE TAREAS REPETIBLES ---
         val plantillas = data.tareas.filter { it.esPlantilla }
         val tareasNormales = data.tareas.filter { !it.esPlantilla }
-        
-        // 1. Generar instancias para HOY
+
         val instanciasHoy = generateTareaInstancesUseCase(plantillas, data.excepciones, today)
-        val tareasHoyFinal = (tareasNormales.filter { it.fechaHoraInicio.toLocalDate() == today } + instanciasHoy)
+        val tareasHoyFinal =
+            (tareasNormales.filter { it.fechaHoraInicio.toLocalDate() == today } + instanciasHoy)
 
-        // 2. Generar instancias para el DÍA SELECCIONADO en la agenda
-        val instanciasAgenda = generateTareaInstancesUseCase(plantillas, data.excepciones, agendaDate)
-        val tareasAgendaFinal = (tareasNormales.filter { it.fechaHoraInicio.toLocalDate() == agendaDate } + instanciasAgenda)
+        val instanciasAgenda =
+            generateTareaInstancesUseCase(plantillas, data.excepciones, agendaDate)
+        val tareasAgendaFinal =
+            (tareasNormales.filter { it.fechaHoraInicio.toLocalDate() == agendaDate } + instanciasAgenda)
 
-        // 3. Generar instancias para TODO EL MES ACTUAL (para los puntos del calendario)
         val firstDayOfMonth = agendaDate.with(TemporalAdjusters.firstDayOfMonth())
         val lastDayOfMonth = agendaDate.with(TemporalAdjusters.lastDayOfMonth())
-        
+
         val todasLasInstanciasDelMes = mutableListOf<Tarea>()
         var currentLoopDate = firstDayOfMonth
         while (!currentLoopDate.isAfter(lastDayOfMonth)) {
-            todasLasInstanciasDelMes.addAll(generateTareaInstancesUseCase(plantillas, data.excepciones, currentLoopDate))
+            todasLasInstanciasDelMes.addAll(
+                generateTareaInstancesUseCase(
+                    plantillas,
+                    data.excepciones,
+                    currentLoopDate
+                )
+            )
             currentLoopDate = currentLoopDate.plusDays(1)
         }
 
-        // Combinamos normales del mes + instancias del mes para que el calendario vea todo
-        val todasLasTareasVisibles = (tareasNormales.filter { 
-            !it.fechaHoraInicio.toLocalDate().isBefore(firstDayOfMonth) && 
-            !it.fechaHoraInicio.toLocalDate().isAfter(lastDayOfMonth) 
+        val todasLasTareasVisibles = (tareasNormales.filter {
+            !it.fechaHoraInicio.toLocalDate().isBefore(firstDayOfMonth) &&
+                    !it.fechaHoraInicio.toLocalDate().isAfter(lastDayOfMonth)
         } + todasLasInstanciasDelMes)
 
         val suggestion = getSmartSuggestionUseCase(tareasHoyFinal)
@@ -127,14 +150,18 @@ class DashboardViewModel @Inject constructor(
                     val hoy = LocalDate.now()
                     excepcionRepository.deleteExcepcionesFuturas(tarea.plantillaId!!, hoy)
                     val currentData = (state.value as? DashboardState.Success)
-                    // Buscamos la plantilla en la lista cruda de la DB, no en la procesada si es posible
-                    // Aquí usamos todasLasTareas como referencia
                     val plantilla = currentData?.todasLasTareas?.find { it.id == tarea.plantillaId }
                     if (plantilla != null) {
                         updateTaskUseCase(plantilla.copy(fechaFinRepeticion = hoy))
                     }
                 } else {
-                    excepcionRepository.upsertExcepcion(TareaExcepcion(plantillaId = tarea.plantillaId!!, fecha = tarea.fechaHoraInicio.toLocalDate(), estaSaltada = true))
+                    excepcionRepository.upsertExcepcion(
+                        TareaExcepcion(
+                            plantillaId = tarea.plantillaId!!,
+                            fecha = tarea.fechaHoraInicio.toLocalDate(),
+                            estaSaltada = true
+                        )
+                    )
                 }
             } else {
                 deleteEntityUseCase.deleteTarea(tarea)
@@ -146,28 +173,65 @@ class DashboardViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun addTarea(tarea: Tarea) {
         viewModelScope.launch {
-            val generatedId = updateTaskUseCase(tarea)
-            // Corregido: Llamamos a schedule siempre, el scheduler manejará si es plantilla o no
-            alarmScheduler.schedule(tarea.copy(id = generatedId.toInt()))
+            // Asegurar que si estamos editando una instancia, actualizamos la plantilla
+            val taskToSave =
+                if (tarea.plantillaId != null && tarea.plantillaId != 0 && tarea.id == 0) {
+                    tarea.copy(id = tarea.plantillaId!!)
+                } else {
+                    tarea
+                }
+
+            val generatedId = updateTaskUseCase(taskToSave)
+
+            // Reprogramar alarmas: cancelar las viejas y poner las nuevas
+            alarmScheduler.cancel(taskToSave)
+            alarmScheduler.schedule(taskToSave.copy(id = generatedId.toInt()))
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun addNote(titulo: String, contenido: String, colorHex: String) {
-        viewModelScope.launch { addNoteUseCase(Nota(titulo = titulo, contenido = contenido, colorEtiquetaHex = colorHex, fechaCreacion = LocalDateTime.now())) }
+        viewModelScope.launch {
+            addNoteUseCase(
+                Nota(
+                    titulo = titulo,
+                    contenido = contenido,
+                    colorEtiquetaHex = colorHex,
+                    fechaCreacion = LocalDateTime.now()
+                )
+            )
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun toggleRitual(ritual: Bienestar) {
         viewModelScope.launch {
             val hoy = LocalDate.now()
-            val nuevoValor = if (ritual.valorActual >= ritual.metaObjetivo) 0f else ritual.metaObjetivo
-            addBienestarUseCase(ritual.copy(valorActual = nuevoValor, fecha = hoy.atTime(ritual.horaProgramada ?: LocalTime.now())))
+            val nuevoValor =
+                if (ritual.valorActual >= ritual.metaObjetivo) 0f else ritual.metaObjetivo
+            addBienestarUseCase(
+                ritual.copy(
+                    valorActual = nuevoValor,
+                    fecha = hoy.atTime(ritual.horaProgramada ?: LocalTime.now())
+                )
+            )
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun addRitualPersonalizado(nombre: String, hora: LocalTime?) {
-        viewModelScope.launch { addBienestarUseCase(Bienestar(tipo = nombre, valorActual = 0f, metaObjetivo = 1f, unidad = "u", iconoNombre = "star", fecha = LocalDateTime.now(), horaProgramada = hora)) }
+        viewModelScope.launch {
+            addBienestarUseCase(
+                Bienestar(
+                    tipo = nombre,
+                    valorActual = 0f,
+                    metaObjetivo = 1f,
+                    unidad = "u",
+                    iconoNombre = "star",
+                    fecha = LocalDateTime.now(),
+                    horaProgramada = hora
+                )
+            )
+        }
     }
 }
