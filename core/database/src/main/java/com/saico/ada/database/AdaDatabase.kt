@@ -24,7 +24,7 @@ import com.saico.ada.database.entity.TareaExcepcionEntity
         NotaEntity::class,
         TareaExcepcionEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -40,30 +40,32 @@ abstract class AdaDatabase : RoomDatabase() {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // 1. Crear la nueva tabla de excepciones
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `tarea_excepciones` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
                         `plantillaId` INTEGER NOT NULL, 
                         `fecha` INTEGER NOT NULL, 
-                        `estaCompletada` INTEGER NOT NULL, 
-                        `estaSaltada` INTEGER NOT NULL, 
+                        `estaCompletada` INTEGER NOT NULL DEFAULT 0, 
+                        `estaSaltada` INTEGER NOT NULL DEFAULT 0, 
                         FOREIGN KEY(`plantillaId`) REFERENCES `tareas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
                     )
                 """.trimIndent())
-                
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tarea_excepciones_plantillaId` ON `tarea_excepciones` (`plantillaId`)")
-
-                // 2. Modificar la tabla 'tareas' para agregar los nuevos campos de repetición
-                // Room no soporta ADD COLUMN con valores por defecto complejos o múltiples en una sola migración fácilmente en algunas versiones de SQLite,
-                // pero para estos campos simples funciona:
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `esPlantilla` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `tipoRepeticion` TEXT NOT NULL DEFAULT 'NINGUNA'")
-                db.execSQL("ALTER TABLE `tareas` ADD COLUMN `diasRepeticion` TEXT")
+                db.execSQL("ALTER TABLE `tareas` ADD COLUMN `diasRepeticion` TEXT NOT NULL DEFAULT ''")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `horaInicio` TEXT")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `duracionMinutos` INTEGER NOT NULL DEFAULT 60")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `fechaInicioRepeticion` INTEGER")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `fechaFinRepeticion` INTEGER")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Para cambiar un índice a UNIQUE en SQLite, lo más seguro es borrar el viejo y crear el nuevo
+                db.execSQL("DROP INDEX IF EXISTS `index_tarea_excepciones_plantillaId` ")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tarea_excepciones_plantillaId_fecha` ON `tarea_excepciones` (`plantillaId`, `fecha`)")
             }
         }
     }

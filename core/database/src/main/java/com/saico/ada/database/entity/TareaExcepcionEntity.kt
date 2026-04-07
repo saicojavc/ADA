@@ -14,7 +14,7 @@ import java.time.LocalDate
         childColumns = ["plantillaId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index("plantillaId")]
+    indices = [Index(value = ["plantillaId", "fecha"], unique = true)]
 )
 data class TareaExcepcionEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
