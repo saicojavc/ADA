@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -397,19 +399,19 @@ fun AdaDatePickerWheelDialog(
                 ) {
                     WheelColumn(
                         items = (1..31).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedDay - 1,
+                        initialIndex = selectedDay - 1,
                         onValueChange = { selectedDay = it + 1 },
                         modifier = Modifier.weight(1f)
                     )
                     WheelColumn(
                         items = months,
-                        selectedIndex = selectedMonth - 1,
+                        initialIndex = selectedMonth - 1,
                         onValueChange = { selectedMonth = it + 1 },
                         modifier = Modifier.weight(1.2f)
                     )
                     WheelColumn(
                         items = years,
-                        selectedIndex = years.indexOf(selectedYear.toString()),
+                        initialIndex = years.indexOf(selectedYear.toString()),
                         onValueChange = { selectedYear = years[it].toInt() },
                         modifier = Modifier.weight(1.5f)
                     )
@@ -491,7 +493,7 @@ fun AdaTimeWheelPickerDialog(
                 ) {
                     WheelColumn(
                         items = (0..23).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedHour,
+                        initialIndex = selectedHour,
                         onValueChange = { selectedHour = it },
                         modifier = Modifier.weight(1f)
                     )
@@ -502,7 +504,7 @@ fun AdaTimeWheelPickerDialog(
                     )
                     WheelColumn(
                         items = (0..59).map { it.toString().padStart(2, '0') },
-                        selectedIndex = selectedMinute,
+                        initialIndex = selectedMinute,
                         onValueChange = { selectedMinute = it },
                         modifier = Modifier.weight(1f)
                     )
@@ -531,14 +533,26 @@ fun AdaTimeWheelPickerDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WheelColumn(
     items: List<String>,
-    selectedIndex: Int,
+    initialIndex: Int,
     onValueChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+    val snapBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+
+    // Detectar el cambio de índice basado en el scroll
+    val selectedIndex by remember {
+        derivedStateOf { listState.firstVisibleItemIndex }
+    }
+
+    // Notificar el cambio al exterior automáticamente
+    LaunchedEffect(selectedIndex) {
+        onValueChange(selectedIndex)
+    }
 
     Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
         Box(
@@ -550,6 +564,7 @@ fun WheelColumn(
 
         LazyColumn(
             state = listState,
+            flingBehavior = snapBehavior,
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(vertical = 60.dp)
@@ -563,7 +578,6 @@ fun WheelColumn(
                     color = if (isSelected) VerdeSalvia else TextoGrisOscuro.copy(alpha = 0.3f),
                     modifier = Modifier
                         .padding(vertical = 8.dp)
-                        .clickable { onValueChange(index) }
                 )
             }
         }
