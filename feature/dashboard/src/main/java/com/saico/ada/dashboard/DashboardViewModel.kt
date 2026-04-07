@@ -88,7 +88,7 @@ class DashboardViewModel @Inject constructor(
         DashboardState.Success(
             tareasHoy = tareasHoyFinal,
             tareasAgenda = tareasAgendaFinal,
-            todasLasTareas = todasLasTareasVisibles, // <-- Esto alimenta los puntos del calendario
+            todasLasTareas = todasLasTareasVisibles,
             registrosBienestar = data.registrosBienestar,
             notas = data.notas,
             userName = userName ?: "Jorge",
@@ -127,14 +127,18 @@ class DashboardViewModel @Inject constructor(
                     val hoy = LocalDate.now()
                     excepcionRepository.deleteExcepcionesFuturas(tarea.plantillaId!!, hoy)
                     val currentData = (state.value as? DashboardState.Success)
+                    // Buscamos la plantilla en la lista cruda de la DB, no en la procesada si es posible
+                    // Aquí usamos todasLasTareas como referencia
                     val plantilla = currentData?.todasLasTareas?.find { it.id == tarea.plantillaId }
-                    if (plantilla != null) updateTaskUseCase(plantilla.copy(fechaFinRepeticion = hoy))
+                    if (plantilla != null) {
+                        updateTaskUseCase(plantilla.copy(fechaFinRepeticion = hoy))
+                    }
                 } else {
                     excepcionRepository.upsertExcepcion(TareaExcepcion(plantillaId = tarea.plantillaId!!, fecha = tarea.fechaHoraInicio.toLocalDate(), estaSaltada = true))
                 }
             } else {
                 deleteEntityUseCase.deleteTarea(tarea)
-                if (!tarea.esPlantilla) alarmScheduler.cancel(tarea)
+                alarmScheduler.cancel(tarea)
             }
         }
     }
@@ -143,7 +147,8 @@ class DashboardViewModel @Inject constructor(
     fun addTarea(tarea: Tarea) {
         viewModelScope.launch {
             val generatedId = updateTaskUseCase(tarea)
-            if (!tarea.esPlantilla) alarmScheduler.schedule(tarea.copy(id = generatedId.toInt()))
+            // Corregido: Llamamos a schedule siempre, el scheduler manejará si es plantilla o no
+            alarmScheduler.schedule(tarea.copy(id = generatedId.toInt()))
         }
     }
 
