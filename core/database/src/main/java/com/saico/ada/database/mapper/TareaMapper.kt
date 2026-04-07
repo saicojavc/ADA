@@ -12,7 +12,14 @@ fun TareaEntity.toDomain() = Tarea(
     categoria = categoria,
     colorHex = colorHex,
     estaCompletada = estaCompletada,
-    esPrioridadIA = esPrioridadIA
+    esPrioridadIA = esPrioridadIA,
+    esPlantilla = esPlantilla,
+    tipoRepeticion = tipoRepeticion,
+    diasRepeticion = diasRepeticion,
+    horaInicio = horaInicio,
+    duracionMinutos = duracionMinutos,
+    fechaInicioRepeticion = fechaInicioRepeticion,
+    fechaFinRepeticion = fechaFinRepeticion
 )
 
 fun Tarea.toEntity() = TareaEntity(
@@ -24,5 +31,12 @@ fun Tarea.toEntity() = TareaEntity(
     categoria = categoria,
     colorHex = colorHex,
     estaCompletada = estaCompletada,
-    esPrioridadIA = esPrioridadIA
+    esPrioridadIA = esPrioridadIA,
+    esPlantilla = esPlantilla,
+    tipoRepeticion = tipoRepeticion,
+    diasRepeticion = diasRepeticion,
+    horaInicio = horaInicio,
+    duracionMinutos = duracionMinutos,
+    fechaInicioRepeticion = fechaInicioRepeticion,
+    fechaFinRepeticion = fechaFinRepeticion
 )

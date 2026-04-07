@@ -81,11 +81,12 @@ fun Context(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
+                    val successState = uiState as? DashboardState.Success
                     when (selectedBottomAppBarItem) {
                         BottomAppBarItems.HOME -> HomeScreen(uiState, viewModel)
                         BottomAppBarItems.AGENDA -> AgendaScreen(
-                            todasLasTareas = (uiState as? DashboardState.Success)?.todasLasTareas
-                                ?: emptyList(),
+                            todasLasTareas = successState?.todasLasTareas ?: emptyList(),
+                            tareasDelDia = successState?.tareasAgenda ?: emptyList(),
                             selectedDate = agendaSelectedDate,
                             agendaViewMode = agendaViewMode,
                             onDateSelected = viewModel::onAgendaDateSelected,

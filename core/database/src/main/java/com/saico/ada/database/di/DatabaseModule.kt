@@ -22,7 +22,7 @@ object DatabaseModule {
             AdaDatabase::class.java,
             AdaDatabase.Companion.DATABASE_NAME
         )
-        .fallbackToDestructiveMigration()
+        .addMigrations(AdaDatabase.MIGRATION_3_4)
         .build()
     }
 }
