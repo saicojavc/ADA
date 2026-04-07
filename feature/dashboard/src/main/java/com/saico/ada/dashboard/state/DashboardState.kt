@@ -15,13 +15,14 @@ sealed class DashboardState {
         val registrosBienestar: List<Bienestar>,
         val notas: List<Nota>,
         val userName: String,
-        @StringRes val greetingRes: Int, // Cambiado a Int para usar R.string
+        @StringRes val greetingRes: Int,
         val isMother: Boolean,
         val adaSuggestionRes: Int,
         val adaActionRes: Int,
         val adaSuggestionArgs: List<Any> = emptyList(),
         val adaActionArgs: List<Any> = emptyList(),
-        val suggestionType: SuggestionType
+        val suggestionType: SuggestionType,
+        val balanceScore: Int
     ) : DashboardState()
 
     data class Error(val message: String) : DashboardState()

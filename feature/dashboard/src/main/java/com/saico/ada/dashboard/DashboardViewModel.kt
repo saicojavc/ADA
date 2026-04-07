@@ -32,7 +32,8 @@ class DashboardViewModel @Inject constructor(
     private val marcarTareaCompletadaUseCase: MarcarTareaCompletadaUseCase,
     private val generateTareaInstancesUseCase: GenerateTareaInstancesUseCase,
     private val excepcionRepository: TareaExcepcionRepository,
-    private val tareaRepository: TareaRepository
+    private val tareaRepository: TareaRepository,
+    private val getBalanceScoreUseCase: GetBalanceScoreUseCase
 ) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -45,8 +46,12 @@ class DashboardViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     val state: StateFlow<DashboardState> = combine(
-        getDashboardDataUseCase(), _selectedAgendaDate, userPrefs.userName, userPrefs.isMother
-    ) { data, agendaDate, userName, isMother ->
+        getDashboardDataUseCase(), 
+        _selectedAgendaDate, 
+        userPrefs.userName, 
+        userPrefs.isMother,
+        getBalanceScoreUseCase()
+    ) { data, agendaDate, userName, isMother, balanceScore ->
         val today = LocalDate.now()
         val now = LocalTime.now()
 
@@ -95,7 +100,8 @@ class DashboardViewModel @Inject constructor(
             adaActionRes = suggestion.accionRes,
             adaSuggestionArgs = suggestion.mensajeArgs,
             adaActionArgs = suggestion.accionArgs,
-            suggestionType = suggestion.tipo
+            suggestionType = suggestion.tipo,
+            balanceScore = balanceScore
         ) as DashboardState
     }.catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState.Loading)

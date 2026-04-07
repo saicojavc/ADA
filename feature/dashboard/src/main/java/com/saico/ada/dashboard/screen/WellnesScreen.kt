@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.model.Bienestar
+import com.saico.ada.model.Tarea
 import com.saico.ada.ui.theme.*
 import com.saico.ada.ui.R
 import java.time.LocalTime
@@ -53,6 +55,8 @@ fun WellnessScreen(
 ) {
     val successState = uiState as? DashboardState.Success
     val registros = successState?.registrosBienestar ?: emptyList()
+    val balanceScore = successState?.balanceScore ?: 0
+    val tareasHoy = successState?.tareasHoy ?: emptyList()
     val context = LocalContext.current
 
     // Determinar el momento del día para la estética circadiana
@@ -82,21 +86,12 @@ fun WellnessScreen(
         }
     }
 
-    val balanceScore = if (successState != null) {
-        val tareas = successState.tareasHoy
-        val countCarga = tareas.count { it.categoria in listOf("Trabajo", "Hogar", "Maternidad") }
-        val countBienestar = tareas.count { it.categoria == "Bienestar" }
-        val totalTareas = (countCarga + countBienestar).coerceAtLeast(1)
-        val ratioBienestar = countBienestar.toFloat() / totalTareas.toFloat()
-        val score = (100 - (kotlin.math.abs(0.5f - ratioBienestar) * 200)).toInt()
-        score.coerceIn(0, 100)
-    } else 0
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         item { WellnessHeaderOrganico(balanceScore) }
+        item { BalanceBreakdownSection(tareasHoy) }
         item { SleepWaveSection(registros, timeOfDay) }
         item {
             StepsSection(
@@ -152,6 +147,58 @@ fun WellnessHeaderOrganico(score: Int) {
                     if (isUnbalanced) Icon(imageVector = Icons.Rounded.WarningAmber, contentDescription = null, tint = TerracotaSuave.copy(alpha = 0.5f), modifier = Modifier.size(20.dp).padding(top = 4.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun BalanceBreakdownSection(tareas: List<Tarea>) {
+    val bienestarKeywords = listOf("bienestar", "wellbeing")
+    val bienestar = tareas.filter { it.categoria.lowercase() in bienestarKeywords }
+    val carga = tareas.filter { it.categoria.lowercase() !in bienestarKeywords }
+
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Text(
+            text = "Distribución de actividades",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = TextoGrisOscuro
+        )
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BalanceInfoCard(
+                modifier = Modifier.weight(1f),
+                title = "Bienestar",
+                count = bienestar.size,
+                color = VerdeSalvia,
+                icon = Icons.Rounded.SelfImprovement
+            )
+            BalanceInfoCard(
+                modifier = Modifier.weight(1f),
+                title = "Carga",
+                count = carga.size,
+                color = TerracotaSuave,
+                icon = Icons.Rounded.HistoryEdu
+            )
+        }
+    }
+}
+
+@Composable
+fun BalanceInfoCard(modifier: Modifier, title: String, count: Int, color: Color, icon: ImageVector) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = count.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = color)
+            Text(text = title, style = MaterialTheme.typography.labelMedium, color = color.copy(alpha = 0.8f))
         }
     }
 }
