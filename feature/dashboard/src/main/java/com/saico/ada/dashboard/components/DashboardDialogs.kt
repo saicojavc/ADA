@@ -38,12 +38,14 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -73,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.model.TipoRepeticion
 import com.saico.ada.ui.R
@@ -1218,24 +1221,41 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
 
 @Composable
 fun AddNotaDialog(
+    nota: Nota? = null,
     tareasHoy: List<Tarea> = emptyList(),
     onDismiss: () -> Unit,
-    onConfirm: (String, String, Int?) -> Unit
+    onConfirm: (String, String, Int?) -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
-    var titulo by remember { mutableStateOf("") }
-    var contenido by remember { mutableStateOf("") }
-    var selectedTaskId by remember { mutableStateOf<Int?>(null) }
+    var titulo by remember { mutableStateOf(nota?.titulo ?: "") }
+    var contenido by remember { mutableStateOf(nota?.contenido ?: "") }
+    var selectedTaskId by remember { mutableStateOf<Int?>(nota?.tareaId) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
         shape = RoundedCornerShape(28.dp),
         title = {
-            Text(
-                stringResource(R.string.dialog_new_note),
-                color = TextoGrisOscuro,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    if (nota == null) stringResource(R.string.dialog_new_note) else "Editar Nota",
+                    color = TextoGrisOscuro,
+                    fontWeight = FontWeight.Bold
+                )
+                if (onDelete != null) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = "Borrar nota",
+                            tint = TerracotaSuave
+                        )
+                    }
+                }
+            }
         },
         text = {
             Column(

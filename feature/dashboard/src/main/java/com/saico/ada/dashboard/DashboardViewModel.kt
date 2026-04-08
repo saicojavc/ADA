@@ -9,6 +9,7 @@ import com.saico.ada.datastore.UserPrefs
 import com.saico.ada.domain.use_case.AddNoteUseCase
 import com.saico.ada.domain.use_case.AddRitualUseCase
 import com.saico.ada.domain.use_case.AddTareaUseCase
+import com.saico.ada.domain.use_case.DeleteNoteUseCase
 import com.saico.ada.domain.use_case.DeleteTareaUseCase
 import com.saico.ada.domain.use_case.GetBalanceScoreUseCase
 import com.saico.ada.domain.use_case.GetDashboardDataUseCase
@@ -19,6 +20,7 @@ import com.saico.ada.domain.use_case.GetTasksForMonthUseCase
 import com.saico.ada.domain.use_case.GreetingTime
 import com.saico.ada.domain.use_case.MarcarTareaCompletadaUseCase
 import com.saico.ada.domain.use_case.ToggleRitualUseCase
+import com.saico.ada.domain.use_case.UpdateNoteUseCase
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
@@ -42,6 +44,8 @@ import javax.inject.Inject
 class DashboardViewModel @Inject constructor(
     private val getDashboardDataUseCase: GetDashboardDataUseCase,
     private val addNoteUseCase: AddNoteUseCase,
+    private val updateNoteUseCase: UpdateNoteUseCase,
+    private val deleteNoteUseCase: DeleteNoteUseCase,
     private val userPrefs: UserPrefs,
     private val getSmartSuggestionUseCase: GetSmartSuggestionUseCase,
     private val marcarTareaCompletadaUseCase: MarcarTareaCompletadaUseCase,
@@ -162,6 +166,20 @@ class DashboardViewModel @Inject constructor(
                     tareaId = tareaId
                 )
             )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun updateNote(nota: Nota) {
+        viewModelScope.launch {
+            updateNoteUseCase(nota)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun deleteNote(nota: Nota) {
+        viewModelScope.launch {
+            deleteNoteUseCase(nota)
         }
     }
 
