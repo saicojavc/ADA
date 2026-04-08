@@ -6,33 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.datastore.UserPrefs
-import com.saico.ada.domain.use_case.AddNoteUseCase
-import com.saico.ada.domain.use_case.AddRitualUseCase
-import com.saico.ada.domain.use_case.AddTareaUseCase
-import com.saico.ada.domain.use_case.DeleteNoteUseCase
-import com.saico.ada.domain.use_case.DeleteTareaUseCase
-import com.saico.ada.domain.use_case.GetBalanceScoreUseCase
-import com.saico.ada.domain.use_case.GetDashboardDataUseCase
-import com.saico.ada.domain.use_case.GetGreetingUseCase
-import com.saico.ada.domain.use_case.GetSmartSuggestionUseCase
-import com.saico.ada.domain.use_case.GetTasksForDateUseCase
-import com.saico.ada.domain.use_case.GetTasksForMonthUseCase
-import com.saico.ada.domain.use_case.GreetingTime
-import com.saico.ada.domain.use_case.MarcarTareaCompletadaUseCase
-import com.saico.ada.domain.use_case.ToggleRitualUseCase
-import com.saico.ada.domain.use_case.UpdateNoteUseCase
+import com.saico.ada.domain.use_case.*
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -56,7 +36,8 @@ class DashboardViewModel @Inject constructor(
     private val addTareaUseCase: AddTareaUseCase,
     private val deleteTareaUseCase: DeleteTareaUseCase,
     private val toggleRitualUseCase: ToggleRitualUseCase,
-    private val addRitualUseCase: AddRitualUseCase
+    private val addRitualUseCase: AddRitualUseCase,
+    private val getInactivitySleepUseCase: GetInactivitySleepUseCase
 ) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -72,10 +53,12 @@ class DashboardViewModel @Inject constructor(
     val state: StateFlow<DashboardState> = combine(
         getDashboardDataUseCase(),
         _selectedAgendaDate,
-        userPrefs.userName,
-        userPrefs.isMother,
-        getBalanceScoreUseCase()
-    ) { data, agendaDate, userName, isMother, balanceScore ->
+        combine(userPrefs.userName, userPrefs.isMother) { name, mother -> name to mother },
+        getBalanceScoreUseCase(),
+        getInactivitySleepUseCase()
+    ) { data, agendaDate, userPref, balanceScore, autoSleepHours ->
+        val userName = userPref.first
+        val isMother = userPref.second
         val today = LocalDate.now()
 
         val greetingRes = when (getGreetingUseCase()) {
@@ -93,7 +76,7 @@ class DashboardViewModel @Inject constructor(
 
         // Calcular horas de sueño de las tareas completadas hoy
         val keywordsSueno = listOf("sueño", "descanso", "sleep", "rest")
-        val horasSuenoCalculadas = tareasHoyFinal
+        val manualSleepHours = tareasHoyFinal
             .filter {
                 it.estaCompletada && keywordsSueno.any { kw ->
                     it.titulo.lowercase().contains(kw)
@@ -103,6 +86,9 @@ class DashboardViewModel @Inject constructor(
                 val duracion = ChronoUnit.MINUTES.between(it.fechaHoraInicio, it.fechaHoraFin)
                 duracion.toDouble() / 60.0
             }.toFloat()
+
+        // El sueño total es el máximo entre lo manual y lo automático (evita duplicar si el usuario pone la tarea)
+        val totalSleepHours = maxOf(manualSleepHours, autoSleepHours)
 
         DashboardState.Success(
             tareasHoy = tareasHoyFinal,
@@ -119,7 +105,7 @@ class DashboardViewModel @Inject constructor(
             adaActionArgs = suggestion.accionArgs,
             suggestionType = suggestion.tipo,
             balanceScore = balanceScore,
-            horasSueno = horasSuenoCalculadas
+            horasSueno = totalSleepHours
         ) as DashboardState
     }.catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState.Loading)
