@@ -54,12 +54,15 @@
     <string name="dialog_no_time">No time set (All day)</string>
     <string name="dialog_scheduled_at">Scheduled: %1$s</string>
     <string name="dialog_new_note">New Note</string>
+    <string name="dialog_edit_note">Edit Note</string>
     <string name="dialog_note_title">Title</string>
     <string name="dialog_note_content">Content</string>
     <string name="dialog_select_date">Select date</string>
     <string name="dialog_select_time">Select time</string>
     <string name="dialog_select_hour">Select the hour</string>
     <string name="dialog_unbalanced">UNBALANCED</string>
+    <string name="dialog_link_to_task">Link to a task for today</string>
+    <string name="content_desc_delete_note">Delete note</string>
 
     <!-- Wellness -->
     <string name="wellness_title">Your Wellbeing</string>

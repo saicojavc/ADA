@@ -75,6 +75,7 @@ import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
 import kotlinx.coroutines.delay
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -90,11 +91,11 @@ fun HomeScreen(
     var tareaVerNotas by remember { mutableStateOf<Pair<Tarea, List<Nota>>?>(null) }
     val successState = uiState as? DashboardState.Success
 
-    var currentTime by remember { mutableStateOf(LocalTime.now()) }
+    var currentDateTime by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000 * 60)
-            currentTime = LocalTime.now()
+            currentDateTime = LocalDateTime.now()
         }
     }
 
@@ -144,13 +145,13 @@ fun HomeScreen(
             if (successState.tareasHoy.isEmpty()) {
                 item { EmptyDayState() }
             } else {
-                val tareasHoy = successState.tareasHoy.sortedBy { it.fechaHoraInicio.toLocalTime() }
+                val tareasHoy = successState.tareasHoy.sortedBy { it.fechaHoraInicio }
                 items(tareasHoy) { tarea ->
                     val notasVinculadas = successState.notas.filter { it.tareaId == tarea.id }
                     TimelineItem(
                         tarea = tarea,
                         notasCount = notasVinculadas.size,
-                        currentTime = currentTime,
+                        currentDateTime = currentDateTime,
                         onDelete = { tareaToDelete = tarea },
                         onEdit = { tareaToEdit = tarea },
                         onToggleCompletada = { viewModel.toggleTareaCompletada(it) },
@@ -381,7 +382,7 @@ fun EmptyDayState() {
 fun TimelineItem(
     tarea: Tarea,
     notasCount: Int,
-    currentTime: LocalTime,
+    currentDateTime: LocalDateTime,
     onDelete: () -> Unit,
     onEdit: () -> Unit,
     onToggleCompletada: (Tarea) -> Unit,
@@ -395,8 +396,7 @@ fun TimelineItem(
         else -> Icons.Rounded.Home
     }
 
-    val isPast =
-        currentTime.isAfter(tarea.fechaHoraFin.toLocalTime()) || currentTime == tarea.fechaHoraFin.toLocalTime()
+    val isPast = currentDateTime.isAfter(tarea.fechaHoraFin)
     var showMenu by remember { mutableStateOf(false) }
 
     Row(

@@ -20,9 +20,9 @@
     <string name="home_preparing_suggestions">ADA está preparando tus sugerencias.</string>
     <string name="home_empty_title">Tu día está despejado.</string>
     <string name="home_empty_message">No tienes tareas pendientes. Disfruta de este espacio para ti.</string>
-    <string name="home_greeting_morning">Buenos días</string>
-    <string name="home_greeting_afternoon">Buenas tardes</string>
-    <string name="home_greeting_evening">Buenas noches</string>
+    <string name="home_greeting_morning">Buenos días, %1$s</string>
+    <string name="home_greeting_afternoon">Buenas tardes, %1$s</string>
+    <string name="home_greeting_evening">Buenas noches, %1$s</string>
 
     <!-- Acciones Comunes -->
     <string name="action_edit">Editar</string>
@@ -55,12 +55,15 @@
     <string name="dialog_no_time">Sin hora establecida</string>
     <string name="dialog_scheduled_at">Programado: %1$s</string>
     <string name="dialog_new_note">Nueva Nota</string>
+    <string name="dialog_edit_note">Editar Nota</string>
     <string name="dialog_note_title">Título</string>
     <string name="dialog_note_content">Contenido</string>
     <string name="dialog_select_date">Selecciona la fecha</string>
     <string name="dialog_select_time">Selecciona la hora</string>
     <string name="dialog_select_hour">Selecciona la hora</string>
     <string name="dialog_unbalanced">DESEQUILIBRADO</string>
+    <string name="dialog_link_to_task">Vincular a una tarea de hoy</string>
+    <string name="content_desc_delete_note">Borrar nota</string>
 
     <!-- Bienestar -->
     <string name="wellness_title">Tu Bienestar</string>

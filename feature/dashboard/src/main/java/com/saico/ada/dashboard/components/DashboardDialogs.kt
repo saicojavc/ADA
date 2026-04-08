@@ -1039,8 +1039,10 @@ fun WheelColumn(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
     val snapBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     val selectedIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
+    
     LaunchedEffect(selectedIndex) { onValueChange(selectedIndex) }
-    Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+    
+    Box(modifier = modifier.height(160.dp), contentAlignment = Alignment.Center) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1052,16 +1054,20 @@ fun WheelColumn(
             flingBehavior = snapBehavior,
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(vertical = 60.dp)
+            contentPadding = PaddingValues(vertical = (160.dp - 45.dp) / 2) // Cálculo exacto para centrar el primer y último item
         ) {
             items(items.size) { index ->
-                val isSelected = index == selectedIndex
-                Text(
-                    text = items[index],
-                    style = if (isSelected) MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.bodyLarge,
-                    color = if (isSelected) VerdeSalvia else TextoGrisOscuro.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                Box(
+                    modifier = Modifier.height(45.dp), // Altura exacta por item
+                    contentAlignment = Alignment.Center
+                ) {
+                    val isSelected = index == selectedIndex
+                    Text(
+                        text = items[index],
+                        style = if (isSelected) MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.bodyLarge,
+                        color = if (isSelected) VerdeSalvia else TextoGrisOscuro.copy(alpha = 0.3f)
+                    )
+                }
             }
         }
     }
@@ -1242,7 +1248,7 @@ fun AddNotaDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    if (nota == null) stringResource(R.string.dialog_new_note) else "Editar Nota",
+                    if (nota == null) stringResource(R.string.dialog_new_note) else stringResource(R.string.dialog_edit_note),
                     color = TextoGrisOscuro,
                     fontWeight = FontWeight.Bold
                 )
@@ -1250,7 +1256,7 @@ fun AddNotaDialog(
                     IconButton(onClick = onDelete) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = "Borrar nota",
+                            contentDescription = stringResource(R.string.content_desc_delete_note),
                             tint = TerracotaSuave
                         )
                     }
@@ -1294,7 +1300,7 @@ fun AddNotaDialog(
                 if (tareasHoy.isNotEmpty()) {
                     Column {
                         Text(
-                            text = "Vincular a una tarea de hoy",
+                            text = stringResource(R.string.dialog_link_to_task),
                             style = MaterialTheme.typography.labelSmall,
                             color = VerdeSalvia,
                             fontWeight = FontWeight.Bold,
