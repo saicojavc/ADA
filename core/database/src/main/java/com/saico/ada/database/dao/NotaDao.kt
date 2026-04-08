@@ -9,6 +9,9 @@ interface NotaDao {
     @Query("SELECT * FROM notas_rapidas ORDER BY fechaCreacion DESC")
     fun getAllNotas(): Flow<List<NotaEntity>>
 
+    @Query("SELECT * FROM notas_rapidas WHERE tareaId = :taskId")
+    fun getNotasByTareaId(taskId: Int): Flow<List<NotaEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNota(nota: NotaEntity)
 

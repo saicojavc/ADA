@@ -62,6 +62,8 @@ fun Context(
     var showAddBienestarDialog by remember { mutableStateOf(false) }
     var showAddNotaDialog by remember { mutableStateOf(false) }
 
+    val successState = uiState as? DashboardState.Success
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -81,7 +83,6 @@ fun Context(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    val successState = uiState as? DashboardState.Success
                     when (selectedBottomAppBarItem) {
                         BottomAppBarItems.HOME -> HomeScreen(uiState, viewModel)
                         BottomAppBarItems.AGENDA -> AgendaScreen(
@@ -133,7 +134,7 @@ fun Context(
         }
 
         if (showAddTareaDialog) {
-            val isMother = (uiState as? DashboardState.Success)?.isMother ?: false
+            val isMother = successState?.isMother ?: false
             AddTareaDialog(
                 isMother = isMother,
                 onDismiss = { showAddTareaDialog = false },
@@ -156,9 +157,10 @@ fun Context(
 
         if (showAddNotaDialog) {
             AddNotaDialog(
+                tareasHoy = successState?.tareasHoy ?: emptyList(),
                 onDismiss = { showAddNotaDialog = false },
-                onConfirm = { titulo, contenido ->
-                    viewModel.addNote(titulo, contenido, "#F2CC8F")
+                onConfirm = { titulo, contenido, tareaId ->
+                    viewModel.addNote(titulo, contenido, "#F2CC8F", tareaId)
                     showAddNotaDialog = false
                 }
             )

@@ -9,7 +9,8 @@ fun NotaEntity.toDomain() = Nota(
     contenido = contenido,
     fechaCreacion = fechaCreacion,
     colorEtiquetaHex = colorEtiquetaHex,
-    esIdeaBrillante = esIdeaBrillante
+    esIdeaBrillante = esIdeaBrillante,
+    tareaId = tareaId
 )
 
 fun Nota.toEntity() = NotaEntity(
@@ -18,5 +19,6 @@ fun Nota.toEntity() = NotaEntity(
     contenido = contenido,
     fechaCreacion = fechaCreacion,
     colorEtiquetaHex = colorEtiquetaHex,
-    esIdeaBrillante = esIdeaBrillante
+    esIdeaBrillante = esIdeaBrillante,
+    tareaId = tareaId
 )

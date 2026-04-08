@@ -123,14 +123,15 @@ class DashboardViewModel @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun addNote(titulo: String, contenido: String, colorHex: String) {
+    fun addNote(titulo: String, contenido: String, colorHex: String, tareaId: Int? = null) {
         viewModelScope.launch { 
             addNoteUseCase(
                 Nota(
                     titulo = titulo, 
                     contenido = contenido, 
                     colorEtiquetaHex = colorHex, 
-                    fechaCreacion = LocalDateTime.now()
+                    fechaCreacion = LocalDateTime.now(),
+                    tareaId = tareaId
                 )
             ) 
         }

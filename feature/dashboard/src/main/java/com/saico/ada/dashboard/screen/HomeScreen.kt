@@ -29,6 +29,7 @@ import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.components.AdaSuggestionCard
 import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
 import com.saico.ada.ui.theme.*
@@ -47,6 +48,7 @@ fun HomeScreen(
 ) {
     var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
     var tareaToDelete by remember { mutableStateOf<Tarea?>(null) }
+    var tareaVerNotas by remember { mutableStateOf<Pair<Tarea, List<Nota>>?>(null) }
     val successState = uiState as? DashboardState.Success
 
     var currentTime by remember { mutableStateOf(LocalTime.now()) }
@@ -59,7 +61,7 @@ fun HomeScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp)
+        contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         item {
             HeaderSection(
@@ -99,12 +101,15 @@ fun HomeScreen(
             } else {
                 val tareasHoy = successState.tareasHoy.sortedBy { it.fechaHoraInicio.toLocalTime() }
                 items(tareasHoy) { tarea ->
+                    val notasVinculadas = successState.notas.filter { it.tareaId == tarea.id }
                     TimelineItem(
                         tarea = tarea,
+                        notasCount = notasVinculadas.size,
                         currentTime = currentTime,
                         onDelete = { tareaToDelete = tarea },
                         onEdit = { tareaToEdit = tarea },
-                        onToggleCompletada = { viewModel.toggleTareaCompletada(it) }
+                        onToggleCompletada = { viewModel.toggleTareaCompletada(it) },
+                        onVerNotas = { tareaVerNotas = tarea to notasVinculadas }
                     )
                 }
             }
@@ -154,6 +159,82 @@ fun HomeScreen(
             tareaToDelete = null
         }
     }
+
+    if (tareaVerNotas != null) {
+        NotasVinculadasDialog(
+            tarea = tareaVerNotas!!.first,
+            notas = tareaVerNotas!!.second,
+            onDismiss = { tareaVerNotas = null }
+        )
+    }
+}
+
+@Composable
+fun NotasVinculadasDialog(
+    tarea: Tarea,
+    notas: List<Nota>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BaseCrema,
+        shape = RoundedCornerShape(28.dp),
+        title = {
+            Column {
+                Text(
+                    text = "Notas de la tarea",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextoGrisOscuro,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = tarea.titulo,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = VerdeSalvia
+                )
+            }
+        },
+        text = {
+            if (notas.isEmpty()) {
+                Text("No hay notas vinculadas a esta tarea.", color = TextoGrisOscuro.copy(alpha = 0.6f))
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(notas) { nota ->
+                        val color = nota.colorEtiquetaHex.toComposeColor()
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = color.copy(alpha = 0.1f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = nota.titulo,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextoGrisOscuro
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = nota.contenido,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextoGrisOscuro.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cerrar", color = VerdeSalvia, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @SuppressLint("LocalContextConfigurationRead")
@@ -184,7 +265,15 @@ fun EmptyDayState() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TimelineItem(tarea: Tarea, currentTime: LocalTime, onDelete: () -> Unit, onEdit: () -> Unit, onToggleCompletada: (Tarea) -> Unit) {
+fun TimelineItem(
+    tarea: Tarea,
+    notasCount: Int,
+    currentTime: LocalTime,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    onToggleCompletada: (Tarea) -> Unit,
+    onVerNotas: () -> Unit
+) {
     val color = tarea.colorHex.toComposeColor()
     val icon = when (tarea.categoria) {
         stringResource(R.string.cat_work) -> Icons.Rounded.BusinessCenter
@@ -219,7 +308,23 @@ fun TimelineItem(tarea: Tarea, currentTime: LocalTime, onDelete: () -> Unit, onE
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = tarea.titulo, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextoGrisOscuro, textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None)
-                    Text(text = tarea.categoria, style = MaterialTheme.typography.labelSmall, color = color, textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = tarea.categoria, style = MaterialTheme.typography.labelSmall, color = color, textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None)
+                        if (notasCount > 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                color = VerdeSalvia.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.clickable { onVerNotas() }
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                    Icon(imageVector = Icons.Rounded.Description, contentDescription = null, tint = VerdeSalvia, modifier = Modifier.size(12.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "$notasCount", style = MaterialTheme.typography.labelSmall, color = VerdeSalvia, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
                 }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
@@ -227,6 +332,9 @@ fun TimelineItem(tarea: Tarea, currentTime: LocalTime, onDelete: () -> Unit, onE
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, modifier = Modifier.background(BlancoPuro)) {
                         DropdownMenuItem(text = { Text(stringResource(R.string.action_edit), color = TextoGrisOscuro) }, leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = VerdeSalvia) }, onClick = { showMenu = false; onEdit() })
+                        if (notasCount > 0) {
+                            DropdownMenuItem(text = { Text("Ver notas ($notasCount)", color = TextoGrisOscuro) }, leadingIcon = { Icon(Icons.Rounded.Description, null, tint = VerdeSalvia) }, onClick = { showMenu = false; onVerNotas() })
+                        }
                         DropdownMenuItem(text = { Text(stringResource(R.string.action_delete), color = Color.Red.copy(alpha = 0.7f)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = Color.Red.copy(alpha = 0.7f)) }, onClick = { showMenu = false; onDelete() })
                     }
                 }

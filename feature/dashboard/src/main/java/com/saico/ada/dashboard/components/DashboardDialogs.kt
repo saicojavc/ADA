@@ -8,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -34,7 +35,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,6 +68,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -77,6 +81,7 @@ import com.saico.ada.ui.theme.BaseCrema
 import com.saico.ada.ui.theme.TerracotaSuave
 import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
+import com.saico.ada.ui.util.toComposeColor
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -256,6 +261,8 @@ fun AddTareaDialog(
             "leer", "libro", "curso", "aprender", "idioma",
             "ingles", "podcast", "video tutorial"
         )
+
+        val palabrasCompras = listOf("compra", "supermercado", "super", "lista", "mercado", "tienda", "comprar")
 
         data class CandidatoCategoria(val nombre: String, val palabras: List<String>)
 
@@ -1001,9 +1008,15 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
 }
 
 @Composable
-fun AddNotaDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+fun AddNotaDialog(
+    tareasHoy: List<Tarea> = emptyList(),
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, Int?) -> Unit
+) {
     var titulo by remember { mutableStateOf("") }
     var contenido by remember { mutableStateOf("") }
+    var selectedTaskId by remember { mutableStateOf<Int?>(null) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = BaseCrema,
@@ -1016,7 +1029,10 @@ fun AddNotaDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
                 OutlinedTextField(
                     value = titulo,
                     onValueChange = { titulo = it },
@@ -1029,20 +1045,47 @@ fun AddNotaDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
                         cursorColor = VerdeSalvia
                     ),
                     textStyle = TextStyle(color = TextoGrisOscuro)
-                ); OutlinedTextField(
-                value = contenido,
-                onValueChange = { contenido = it },
-                label = { Text(stringResource(R.string.dialog_note_content)) },
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = TextoGrisOscuro,
-                    unfocusedTextColor = TextoGrisOscuro,
-                    cursorColor = VerdeSalvia
-                ),
-                textStyle = TextStyle(color = TextoGrisOscuro)
-            )
+                )
+
+                OutlinedTextField(
+                    value = contenido,
+                    onValueChange = { contenido = it },
+                    label = { Text(stringResource(R.string.dialog_note_content)) },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextoGrisOscuro,
+                        unfocusedTextColor = TextoGrisOscuro,
+                        cursorColor = VerdeSalvia
+                    ),
+                    textStyle = TextStyle(color = TextoGrisOscuro)
+                )
+
+                if (tareasHoy.isNotEmpty()) {
+                    Column {
+                        Text(
+                            text = "Vincular a una tarea de hoy",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = VerdeSalvia,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(tareasHoy) { tarea ->
+                                val isSelected = selectedTaskId == tarea.id
+                                TareaChip(
+                                    tarea = tarea,
+                                    isSelected = isSelected,
+                                    onClick = { selectedTaskId = if (isSelected) null else tarea.id }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -1050,7 +1093,8 @@ fun AddNotaDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
                 onClick = {
                     if (titulo.isNotBlank() && contenido.isNotBlank()) onConfirm(
                         titulo,
-                        contenido
+                        contenido,
+                        selectedTaskId
                     )
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
@@ -1071,4 +1115,40 @@ fun AddNotaDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
                 )
             }
         })
+}
+
+@Composable
+fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
+    val color = tarea.colorHex.toComposeColor()
+    Surface(
+        modifier = Modifier
+            .clickable { onClick() }
+            .width(140.dp)
+            .height(50.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) color else color.copy(alpha = 0.1f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = if (isSelected) Icons.Rounded.Check else Icons.Rounded.Assignment,
+                contentDescription = null,
+                tint = if (isSelected) Color.White else color,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = tarea.titulo,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isSelected) Color.White else TextoGrisOscuro,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+    }
 }

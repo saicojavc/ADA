@@ -24,7 +24,7 @@ import com.saico.ada.database.entity.TareaExcepcionEntity
         NotaEntity::class,
         TareaExcepcionEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -66,6 +66,12 @@ abstract class AdaDatabase : RoomDatabase() {
                 // Para cambiar un índice a UNIQUE en SQLite, lo más seguro es borrar el viejo y crear el nuevo
                 db.execSQL("DROP INDEX IF EXISTS `index_tarea_excepciones_plantillaId` ")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tarea_excepciones_plantillaId_fecha` ON `tarea_excepciones` (`plantillaId`, `fecha`)")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notas_rapidas` ADD COLUMN `tareaId` INTEGER")
             }
         }
     }
