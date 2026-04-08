@@ -6,13 +6,35 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.datastore.UserPrefs
-import com.saico.ada.domain.use_case.*
-import com.saico.ada.model.*
+import com.saico.ada.domain.use_case.AddNoteUseCase
+import com.saico.ada.domain.use_case.AddRitualUseCase
+import com.saico.ada.domain.use_case.AddTareaUseCase
+import com.saico.ada.domain.use_case.DeleteTareaUseCase
+import com.saico.ada.domain.use_case.GetBalanceScoreUseCase
+import com.saico.ada.domain.use_case.GetDashboardDataUseCase
+import com.saico.ada.domain.use_case.GetGreetingUseCase
+import com.saico.ada.domain.use_case.GetSmartSuggestionUseCase
+import com.saico.ada.domain.use_case.GetTasksForDateUseCase
+import com.saico.ada.domain.use_case.GetTasksForMonthUseCase
+import com.saico.ada.domain.use_case.GreetingTime
+import com.saico.ada.domain.use_case.MarcarTareaCompletadaUseCase
+import com.saico.ada.domain.use_case.ToggleRitualUseCase
+import com.saico.ada.model.Bienestar
+import com.saico.ada.model.Nota
+import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
@@ -35,6 +57,7 @@ class DashboardViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val _selectedAgendaDate = MutableStateFlow(LocalDate.now())
+
     @RequiresApi(Build.VERSION_CODES.O)
     val selectedAgendaDate: StateFlow<LocalDate> = _selectedAgendaDate.asStateFlow()
 
@@ -43,14 +66,14 @@ class DashboardViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     val state: StateFlow<DashboardState> = combine(
-        getDashboardDataUseCase(), 
-        _selectedAgendaDate, 
-        userPrefs.userName, 
+        getDashboardDataUseCase(),
+        _selectedAgendaDate,
+        userPrefs.userName,
         userPrefs.isMother,
         getBalanceScoreUseCase()
     ) { data, agendaDate, userName, isMother, balanceScore ->
         val today = LocalDate.now()
-        
+
         val greetingRes = when (getGreetingUseCase()) {
             GreetingTime.MORNING -> R.string.home_greeting_morning
             GreetingTime.AFTERNOON -> R.string.home_greeting_afternoon
@@ -59,15 +82,20 @@ class DashboardViewModel @Inject constructor(
 
         val tareasHoyFinal = getTasksForDateUseCase(data.tareas, data.excepciones, today)
         val tareasAgendaFinal = getTasksForDateUseCase(data.tareas, data.excepciones, agendaDate)
-        val todasLasTareasVisibles = getTasksForMonthUseCase(data.tareas, data.excepciones, agendaDate)
+        val todasLasTareasVisibles =
+            getTasksForMonthUseCase(data.tareas, data.excepciones, agendaDate)
 
         val suggestion = getSmartSuggestionUseCase(tareasHoyFinal)
 
         // Calcular horas de sueño de las tareas completadas hoy
         val keywordsSueno = listOf("sueño", "descanso", "sleep", "rest")
         val horasSuenoCalculadas = tareasHoyFinal
-            .filter { it.estaCompletada && keywordsSueno.any { kw -> it.titulo.lowercase().contains(kw) } }
-            .sumOf { 
+            .filter {
+                it.estaCompletada && keywordsSueno.any { kw ->
+                    it.titulo.lowercase().contains(kw)
+                }
+            }
+            .sumOf {
                 val duracion = ChronoUnit.MINUTES.between(it.fechaHoraInicio, it.fechaHoraFin)
                 duracion.toDouble() / 60.0
             }.toFloat()
@@ -124,16 +152,16 @@ class DashboardViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun addNote(titulo: String, contenido: String, colorHex: String, tareaId: Int? = null) {
-        viewModelScope.launch { 
+        viewModelScope.launch {
             addNoteUseCase(
                 Nota(
-                    titulo = titulo, 
-                    contenido = contenido, 
-                    colorEtiquetaHex = colorHex, 
+                    titulo = titulo,
+                    contenido = contenido,
+                    colorEtiquetaHex = colorHex,
                     fechaCreacion = LocalDateTime.now(),
                     tareaId = tareaId
                 )
-            ) 
+            )
         }
     }
 
@@ -146,7 +174,7 @@ class DashboardViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun addRitualPersonalizado(nombre: String, hora: LocalTime?) {
-        viewModelScope.launch { 
+        viewModelScope.launch {
             addRitualUseCase(nombre, hora)
         }
     }

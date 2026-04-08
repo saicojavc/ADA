@@ -40,7 +40,8 @@ abstract class AdaDatabase : RoomDatabase() {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""
+                db.execSQL(
+                    """
                     CREATE TABLE IF NOT EXISTS `tarea_excepciones` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
                         `plantillaId` INTEGER NOT NULL, 
@@ -49,7 +50,8 @@ abstract class AdaDatabase : RoomDatabase() {
                         `estaSaltada` INTEGER NOT NULL DEFAULT 0, 
                         FOREIGN KEY(`plantillaId`) REFERENCES `tareas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
                     )
-                """.trimIndent())
+                """.trimIndent()
+                )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tarea_excepciones_plantillaId` ON `tarea_excepciones` (`plantillaId`)")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `esPlantilla` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE `tareas` ADD COLUMN `tipoRepeticion` TEXT NOT NULL DEFAULT 'NINGUNA'")

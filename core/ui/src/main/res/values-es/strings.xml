@@ -177,4 +177,15 @@
     <string name="sug_mom_low_action">Buen comienzo de racha. Sigue así.</string>
 
     <string name="distribution_of_activities">Distribución de actividades</string>
+
+    <!-- Tareas Repetibles -->
+    <string name="dialog_delete_repeatable_title">Eliminar tarea repetible</string>
+    <string name="dialog_delete_repeatable_message">¿Quieres eliminar solo esta instancia o cancelar todas las repeticiones futuras?</string>
+    <string name="dialog_delete_repeatable_cancel_all">Cancelar todas</string>
+    <string name="dialog_delete_repeatable_only_once">Solo esta vez</string>
+
+    <!-- Notas vinculadas -->
+    <string name="task_notes_title">Notas de la tarea</string>
+    <string name="task_notes_empty">No hay notas vinculadas a esta tarea.</string>
+    <string name="action_view_notes">Ver notas (%1$d)</string>
 </resources>

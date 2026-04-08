@@ -177,4 +177,15 @@
 
     <string name="distribution_of_activities">Distribution of activities</string>
     <string name="charging">Charging</string>
+
+    <!-- Tareas Repetibles -->
+    <string name="dialog_delete_repeatable_title">Delete repeatable task</string>
+    <string name="dialog_delete_repeatable_message">Do you want to delete only this instance or cancel all future repetitions?</string>
+    <string name="dialog_delete_repeatable_cancel_all">Cancel all</string>
+    <string name="dialog_delete_repeatable_only_once">Only this time</string>
+
+    <!-- Notas vinculadas -->
+    <string name="task_notes_title">Task notes</string>
+    <string name="task_notes_empty">No notes linked to this task.</string>
+    <string name="action_view_notes">View notes (%1$d)</string>
 </resources>

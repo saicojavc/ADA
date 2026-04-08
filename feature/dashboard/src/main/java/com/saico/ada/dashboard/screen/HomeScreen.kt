@@ -5,15 +5,51 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.BusinessCenter
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material.icons.rounded.WbSunny
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,7 +68,10 @@ import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
-import com.saico.ada.ui.theme.*
+import com.saico.ada.ui.theme.BaseCrema
+import com.saico.ada.ui.theme.BlancoPuro
+import com.saico.ada.ui.theme.TextoGrisOscuro
+import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -73,8 +112,14 @@ fun HomeScreen(
         item {
             if (successState != null) {
                 AdaSuggestionCard(
-                    mensaje = stringResource(successState.adaSuggestionRes, *successState.adaSuggestionArgs.toTypedArray()),
-                    accion = stringResource(successState.adaActionRes, *successState.adaActionArgs.toTypedArray()),
+                    mensaje = stringResource(
+                        successState.adaSuggestionRes,
+                        *successState.adaSuggestionArgs.toTypedArray()
+                    ),
+                    accion = stringResource(
+                        successState.adaActionRes,
+                        *successState.adaActionArgs.toTypedArray()
+                    ),
                     tipo = successState.suggestionType
                 )
             } else {
@@ -115,7 +160,12 @@ fun HomeScreen(
             }
         } else {
             item {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(color = VerdeSalvia)
                 }
             }
@@ -139,19 +189,40 @@ fun HomeScreen(
             AlertDialog(
                 onDismissRequest = { tareaToDelete = null },
                 containerColor = BaseCrema,
-                title = { Text("Eliminar tarea repetible", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
-                text = { Text("¿Quieres eliminar solo esta instancia o cancelar todas las repeticiones futuras?", color = TextoGrisOscuro) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.dialog_delete_repeatable_title),
+                        color = TextoGrisOscuro,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(R.string.dialog_delete_repeatable_message),
+                        color = TextoGrisOscuro
+                    )
+                },
                 confirmButton = {
-                    TextButton(onClick = { 
+                    TextButton(onClick = {
                         viewModel.deleteTarea(tareaToDelete!!, true)
-                        tareaToDelete = null 
-                    }) { Text("Cancelar futuras", color = Color.Red.copy(alpha = 0.7f)) }
+                        tareaToDelete = null
+                    }) {
+                        Text(
+                            text = stringResource(R.string.dialog_delete_repeatable_cancel_all),
+                            color = Color.Red.copy(alpha = 0.7f)
+                        )
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { 
+                    TextButton(onClick = {
                         viewModel.deleteTarea(tareaToDelete!!, false)
-                        tareaToDelete = null 
-                    }) { Text("Solo esta vez", color = VerdeSalvia) }
+                        tareaToDelete = null
+                    }) {
+                        Text(
+                            text = stringResource(R.string.dialog_delete_repeatable_only_once),
+                            color = VerdeSalvia
+                        )
+                    }
                 }
             )
         } else {
@@ -182,7 +253,7 @@ fun NotasVinculadasDialog(
         title = {
             Column {
                 Text(
-                    text = "Notas de la tarea",
+                    text = stringResource(id = R.string.task_notes_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = TextoGrisOscuro,
                     fontWeight = FontWeight.Bold
@@ -196,7 +267,10 @@ fun NotasVinculadasDialog(
         },
         text = {
             if (notas.isEmpty()) {
-                Text("No hay notas vinculadas a esta tarea.", color = TextoGrisOscuro.copy(alpha = 0.6f))
+                Text(
+                    text = stringResource(R.string.task_notes_empty),
+                    color = TextoGrisOscuro.copy(alpha = 0.6f)
+                )
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -208,7 +282,10 @@ fun NotasVinculadasDialog(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             color = color.copy(alpha = 0.1f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                color.copy(alpha = 0.3f)
+                            )
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
@@ -231,7 +308,11 @@ fun NotasVinculadasDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cerrar", color = VerdeSalvia, fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(R.string.action_close),
+                    color = VerdeSalvia,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     )
@@ -248,18 +329,50 @@ fun HeaderSection(saludoRes: Int, userName: String) {
         LocalDate.now().format(formatter).replaceFirstChar { it.uppercase() }
     }
     Column(modifier = Modifier.padding(24.dp)) {
-        Text(text = stringResource(saludoRes, userName), style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold), color = TextoGrisOscuro)
-        Text(text = currentDate, style = MaterialTheme.typography.bodyMedium, color = TextoGrisOscuro.copy(alpha = 0.6f))
+        Text(
+            text = stringResource(saludoRes, userName),
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold
+            ),
+            color = TextoGrisOscuro
+        )
+        Text(
+            text = currentDate,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.6f)
+        )
     }
 }
 
 @Composable
 fun EmptyDayState() {
-    Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(imageVector = Icons.Rounded.WbSunny, contentDescription = null, tint = VerdeSalvia.copy(alpha = 0.2f), modifier = Modifier.size(80.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.WbSunny,
+            contentDescription = null,
+            tint = VerdeSalvia.copy(alpha = 0.2f),
+            modifier = Modifier.size(80.dp)
+        )
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = stringResource(R.string.home_empty_title), style = MaterialTheme.typography.titleMedium, color = TextoGrisOscuro.copy(alpha = 0.6f), textAlign = TextAlign.Center)
-        Text(text = stringResource(R.string.home_empty_message), style = MaterialTheme.typography.bodyMedium, color = TextoGrisOscuro.copy(alpha = 0.4f), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
+        Text(
+            text = stringResource(R.string.home_empty_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = stringResource(R.string.home_empty_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextoGrisOscuro.copy(alpha = 0.4f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 
@@ -282,34 +395,76 @@ fun TimelineItem(
         else -> Icons.Rounded.Home
     }
 
-    val isPast = currentTime.isAfter(tarea.fechaHoraFin.toLocalTime()) || currentTime == tarea.fechaHoraFin.toLocalTime()
+    val isPast =
+        currentTime.isAfter(tarea.fechaHoraFin.toLocalTime()) || currentTime == tarea.fechaHoraFin.toLocalTime()
     var showMenu by remember { mutableStateOf(false) }
 
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).alpha(if (isPast) 0.5f else 1f), verticalAlignment = Alignment.Top) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(50.dp)) {
-            Text(text = tarea.fechaHoraInicio.format(DateTimeFormatter.ofPattern("HH:mm")), style = MaterialTheme.typography.labelMedium, color = TextoGrisOscuro.copy(alpha = 0.5f), textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None)
-            Box(modifier = Modifier.padding(top = 4.dp).width(2.dp).height(60.dp).background(color.copy(alpha = 0.3f)))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .alpha(if (isPast) 0.5f else 1f), verticalAlignment = Alignment.Top
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(50.dp)
+        ) {
+            Text(
+                text = tarea.fechaHoraInicio.format(DateTimeFormatter.ofPattern("HH:mm")),
+                style = MaterialTheme.typography.labelMedium,
+                color = TextoGrisOscuro.copy(alpha = 0.5f),
+                textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
+            )
+            Box(
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .width(2.dp)
+                    .height(60.dp)
+                    .background(color.copy(alpha = 0.3f))
+            )
         }
 
         Card(
-            modifier = Modifier.weight(1f).padding(start = 8.dp).clickable { onToggleCompletada(tarea) },
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp)
+                .clickable { onToggleCompletada(tarea) },
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = BlancoPuro),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isPast) 0.dp else 2.dp)
         ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
                     color = if (tarea.estaCompletada) color else color.copy(alpha = 0.2f),
                     shape = CircleShape,
                     modifier = Modifier.size(40.dp)
                 ) {
-                    Icon(imageVector = if (tarea.estaCompletada) Icons.Rounded.Check else icon, contentDescription = null, tint = if (tarea.estaCompletada) Color.White else color, modifier = Modifier.padding(8.dp))
+                    Icon(
+                        imageVector = if (tarea.estaCompletada) Icons.Rounded.Check else icon,
+                        contentDescription = null,
+                        tint = if (tarea.estaCompletada) Color.White else color,
+                        modifier = Modifier.padding(8.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = tarea.titulo, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextoGrisOscuro, textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None)
+                    Text(
+                        text = tarea.titulo,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextoGrisOscuro,
+                        textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = tarea.categoria, style = MaterialTheme.typography.labelSmall, color = color, textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None)
+                        Text(
+                            text = tarea.categoria,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = color,
+                            textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None
+                        )
                         if (notasCount > 0) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
@@ -317,10 +472,23 @@ fun TimelineItem(
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.clickable { onVerNotas() }
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
-                                    Icon(imageVector = Icons.Rounded.Description, contentDescription = null, tint = VerdeSalvia, modifier = Modifier.size(12.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Description,
+                                        contentDescription = null,
+                                        tint = VerdeSalvia,
+                                        modifier = Modifier.size(12.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(text = "$notasCount", style = MaterialTheme.typography.labelSmall, color = VerdeSalvia, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "$notasCount",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = VerdeSalvia,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
@@ -328,14 +496,59 @@ fun TimelineItem(
                 }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.action_options), tint = TextoGrisOscuro.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(R.string.action_options),
+                            tint = TextoGrisOscuro.copy(alpha = 0.4f),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, modifier = Modifier.background(BlancoPuro)) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.action_edit), color = TextoGrisOscuro) }, leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = VerdeSalvia) }, onClick = { showMenu = false; onEdit() })
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(BlancoPuro)
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(R.string.action_edit),
+                                    color = TextoGrisOscuro
+                                )
+                            },
+                            leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = VerdeSalvia) },
+                            onClick = { showMenu = false; onEdit() })
                         if (notasCount > 0) {
-                            DropdownMenuItem(text = { Text("Ver notas ($notasCount)", color = TextoGrisOscuro) }, leadingIcon = { Icon(Icons.Rounded.Description, null, tint = VerdeSalvia) }, onClick = { showMenu = false; onVerNotas() })
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Ver notas ($notasCount)",
+                                        color = TextoGrisOscuro
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Rounded.Description,
+                                        null,
+                                        tint = VerdeSalvia
+                                    )
+                                },
+                                onClick = { showMenu = false; onVerNotas() })
                         }
-                        DropdownMenuItem(text = { Text(stringResource(R.string.action_delete), color = Color.Red.copy(alpha = 0.7f)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = Color.Red.copy(alpha = 0.7f)) }, onClick = { showMenu = false; onDelete() })
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(R.string.action_delete),
+                                    color = Color.Red.copy(alpha = 0.7f)
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.Delete,
+                                    null,
+                                    tint = Color.Red.copy(alpha = 0.7f)
+                                )
+                            },
+                            onClick = { showMenu = false; onDelete() })
                     }
                 }
             }

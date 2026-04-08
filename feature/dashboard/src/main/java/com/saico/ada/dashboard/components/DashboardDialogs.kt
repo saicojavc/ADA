@@ -95,11 +95,8 @@ import java.time.format.TextStyle as JavaTextStyle
 //  Utilidad de normalización
 // ─────────────────────────────────────────────────────────────
 private fun String.normalize(): String {
-    return this
-        .lowercase()
-        .replace('á', 'a').replace('é', 'e').replace('í', 'i')
-        .replace('ó', 'o').replace('ú', 'u').replace('ü', 'u')
-        .replace('ñ', 'n').replace('à', 'a').replace('è', 'e')
+    return this.lowercase().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o')
+        .replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n').replace('à', 'a').replace('è', 'e')
         .replace('ì', 'i').replace('ò', 'o').replace('ù', 'u')
 }
 
@@ -108,10 +105,7 @@ private fun String.normalize(): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTareaDialog(
-    tarea: Tarea? = null,
-    isMother: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: (Tarea) -> Unit
+    tarea: Tarea? = null, isMother: Boolean, onDismiss: () -> Unit, onConfirm: (Tarea) -> Unit
 ) {
     val catWork = stringResource(R.string.cat_work)
     val catHome = stringResource(R.string.cat_home)
@@ -171,98 +165,349 @@ fun AddTareaDialog(
         // ── Diccionarios por categoría ───────────────────────────────
 
         val palabrasMaternidad = listOf(
-            "bebe", "bebe", "nino", "nina", "hijo", "hija",
-            "hijos", "hijas", "recien nacido", "lactancia", "leche materna",
-            "biberon", "chupete", "cuna", "carrito", "cochecito",
-            "pañal", "panal", "pediatra", "guarderia", "jardin infantil",
-            "colegio", "escuela", "tarea escolar", "mochila", "uniforme",
-            "cumpleanos nino", "cumpleanos nina", "fiesta infantil",
-            "embarazo", "embarazada", "ecografia", "ultrasonido",
-            "obstetra", "ginecologo", "parto", "preparto", "posparto",
-            "cesarea", "semana de gestacion", "primer trimestre",
-            "nana", "bua", "berrinche", "rabieta", "siesta bebe",
-            "introduccion alimentaria", "papilla", "puré bebe",
-            "abuela cuida", "abuela bebe", "guarderia"
+            "bebe",
+            "bebe",
+            "nino",
+            "nina",
+            "hijo",
+            "hija",
+            "hijos",
+            "hijas",
+            "recien nacido",
+            "lactancia",
+            "leche materna",
+            "biberon",
+            "chupete",
+            "cuna",
+            "carrito",
+            "cochecito",
+            "pañal",
+            "panal",
+            "pediatra",
+            "guarderia",
+            "jardin infantil",
+            "colegio",
+            "escuela",
+            "tarea escolar",
+            "mochila",
+            "uniforme",
+            "cumpleanos nino",
+            "cumpleanos nina",
+            "fiesta infantil",
+            "embarazo",
+            "embarazada",
+            "ecografia",
+            "ultrasonido",
+            "obstetra",
+            "ginecologo",
+            "parto",
+            "preparto",
+            "posparto",
+            "cesarea",
+            "semana de gestacion",
+            "primer trimestre",
+            "nana",
+            "bua",
+            "berrinche",
+            "rabieta",
+            "siesta bebe",
+            "introduccion alimentaria",
+            "papilla",
+            "puré bebe",
+            "abuela cuida",
+            "abuela bebe",
+            "guarderia"
         )
 
         val palabrasTrabajo = listOf(
-            "reunion", "junta", "scrum", "daily", "standup", "sprint",
-            "retrospectiva", "planning", "one on one", "1 on 1",
-            "llamada de trabajo", "videollamada trabajo", "zoom work",
-            "meet work", "teams", "slack",
-            "cliente", "proyecto", "entregable", "deadline", "plazo",
-            "informe", "reporte", "presentacion trabajo", "propuesta",
-            "cotizacion", "factura", "cobro", "pago proveedor",
-            "contrato", "firma contrato", "revision codigo", "deploy",
-            "lanzamiento", "release", "soporte", "ticket", "incidencia",
-            "trabajo", "oficina", "office", "home office", "remoto",
-            "jefe", "jefa", "gerente", "director", "ceo", "rrhh",
-            "recursos humanos", "entrevista trabajo", "evaluacion",
-            "capacitacion", "formacion laboral", "curso trabajo",
-            "networking", "conferencia", "congreso", "taller profesional",
-            "workshop", "webinar", "seminario"
+            "reunion",
+            "junta",
+            "scrum",
+            "daily",
+            "standup",
+            "sprint",
+            "retrospectiva",
+            "planning",
+            "one on one",
+            "1 on 1",
+            "llamada de trabajo",
+            "videollamada trabajo",
+            "zoom work",
+            "meet work",
+            "teams",
+            "slack",
+            "cliente",
+            "proyecto",
+            "entregable",
+            "deadline",
+            "plazo",
+            "informe",
+            "reporte",
+            "presentacion trabajo",
+            "propuesta",
+            "cotizacion",
+            "factura",
+            "cobro",
+            "pago proveedor",
+            "contrato",
+            "firma contrato",
+            "revision codigo",
+            "deploy",
+            "lanzamiento",
+            "release",
+            "soporte",
+            "ticket",
+            "incidencia",
+            "trabajo",
+            "oficina",
+            "office",
+            "home office",
+            "remoto",
+            "jefe",
+            "jefa",
+            "gerente",
+            "director",
+            "ceo",
+            "rrhh",
+            "recursos humanos",
+            "entrevista trabajo",
+            "evaluacion",
+            "capacitacion",
+            "formacion laboral",
+            "curso trabajo",
+            "networking",
+            "conferencia",
+            "congreso",
+            "taller profesional",
+            "workshop",
+            "webinar",
+            "seminario"
         )
 
         val palabrasHogar = listOf(
-            "limpiar", "limpeza", "barrer", "fregar", "trapear", "aspirar",
-            "ordenar", "organizar casa", "desinfectar", "lavar ropa",
-            "tender ropa", "planchar", "doblar ropa", "guardar ropa",
-            "cocinar", "receta", "preparar comida", "hornear", "amasar",
-            "descongelar", "marinar", "meal prep",
-            "compra", "compras", "supermercado", "mercado", "tienda",
-            "lista compras", "mandado", "verduleria", "carniceria",
-            "ferreteria", "farmacia hogar",
-            "reparar", "arreglar", "plomero", "electricista", "pintar casa",
-            "pared", "goteras", "fuga", "instalar", "montar mueble",
-            "ikea", "perforacion", "taladro", "tornillo",
-            "casa", "hogar", "habitacion", "cuarto", "bano", "cocina",
-            "jardin", "patio", "balcon", "terraza", "garage",
-            "perro", "gato", "mascota", "veterinario", "pasear perro",
-            "comida perro", "comida gato", "vacuna mascota"
+            "limpiar",
+            "limpeza",
+            "barrer",
+            "fregar",
+            "trapear",
+            "aspirar",
+            "ordenar",
+            "organizar casa",
+            "desinfectar",
+            "lavar ropa",
+            "tender ropa",
+            "planchar",
+            "doblar ropa",
+            "guardar ropa",
+            "cocinar",
+            "receta",
+            "preparar comida",
+            "hornear",
+            "amasar",
+            "descongelar",
+            "marinar",
+            "meal prep",
+            "compra",
+            "compras",
+            "supermercado",
+            "mercado",
+            "tienda",
+            "lista compras",
+            "mandado",
+            "verduleria",
+            "carniceria",
+            "ferreteria",
+            "farmacia hogar",
+            "reparar",
+            "arreglar",
+            "plomero",
+            "electricista",
+            "pintar casa",
+            "pared",
+            "goteras",
+            "fuga",
+            "instalar",
+            "montar mueble",
+            "ikea",
+            "perforacion",
+            "taladro",
+            "tornillo",
+            "casa",
+            "hogar",
+            "habitacion",
+            "cuarto",
+            "bano",
+            "cocina",
+            "jardin",
+            "patio",
+            "balcon",
+            "terraza",
+            "garage",
+            "perro",
+            "gato",
+            "mascota",
+            "veterinario",
+            "pasear perro",
+            "comida perro",
+            "comida gato",
+            "vacuna mascota"
         )
 
         val palabrasBienestar = listOf(
-            "yoga", "gym", "gimnasio", "ejercicio", "entrenamiento",
-            "crossfit", "pilates", "spinning", "nadar", "natacion",
-            "correr", "running", "caminar", "senderismo", "ciclismo",
-            "bicicleta", "pesas", "cardio", "estiramientos", "flexiones",
-            "abdominales", "zumba", "baile", "kickboxing", "boxeo",
-            "medico", "doctor", "cita medica", "consulta", "chequeo",
-            "analisis", "sangre", "presion arterial", "vacuna", "vacunacion",
-            "farmacia", "medicamento", "pastilla", "tratamiento", "terapia fisica",
-            "fisioterapia", "quiropraxia", "masaje", "acupuntura",
-            "dentista", "odontologo", "oculista", "optomentista",
-            "meditar", "meditacion", "mindfulness", "respiracion",
-            "psicologo", "psiquiatra", "terapia", "sesion terapia",
-            "diario emocional", "journaling", "gratitud",
-            "descanso", "dormir", "siesta", "nap", "descansar",
-            "relajar", "relajacion", "spa", "bano relajante",
-            "dieta", "nutricion", "nutricionista", "ayuno", "comer sano",
-            "ensalada", "proteina", "suplemento", "vitamina", "hidratacion",
-            "agua", "infusion", "batido saludable",
-            "piel", "skincare", "crema", "serum", "rutina facial",
-            "mascarilla", "protector solar", "hidratante", "peluqueria",
-            "corte pelo", "manicura", "pedicura",
-            "bienestar", "autocuidado", "autoestima", "habito saludable",
-            "reto saludable", "paso diario", "pasos"
+            "yoga",
+            "gym",
+            "gimnasio",
+            "ejercicio",
+            "entrenamiento",
+            "crossfit",
+            "pilates",
+            "spinning",
+            "nadar",
+            "natacion",
+            "correr",
+            "running",
+            "caminar",
+            "senderismo",
+            "ciclismo",
+            "bicicleta",
+            "pesas",
+            "cardio",
+            "estiramientos",
+            "flexiones",
+            "abdominales",
+            "zumba",
+            "baile",
+            "kickboxing",
+            "boxeo",
+            "medico",
+            "doctor",
+            "cita medica",
+            "consulta",
+            "chequeo",
+            "analisis",
+            "sangre",
+            "presion arterial",
+            "vacuna",
+            "vacunacion",
+            "farmacia",
+            "medicamento",
+            "pastilla",
+            "tratamiento",
+            "terapia fisica",
+            "fisioterapia",
+            "quiropraxia",
+            "masaje",
+            "acupuntura",
+            "dentista",
+            "odontologo",
+            "oculista",
+            "optomentista",
+            "meditar",
+            "meditacion",
+            "mindfulness",
+            "respiracion",
+            "psicologo",
+            "psiquiatra",
+            "terapia",
+            "sesion terapia",
+            "diario emocional",
+            "journaling",
+            "gratitud",
+            "descanso",
+            "dormir",
+            "siesta",
+            "nap",
+            "descansar",
+            "relajar",
+            "relajacion",
+            "spa",
+            "bano relajante",
+            "dieta",
+            "nutricion",
+            "nutricionista",
+            "ayuno",
+            "comer sano",
+            "ensalada",
+            "proteina",
+            "suplemento",
+            "vitamina",
+            "hidratacion",
+            "agua",
+            "infusion",
+            "batido saludable",
+            "piel",
+            "skincare",
+            "crema",
+            "serum",
+            "rutina facial",
+            "mascarilla",
+            "protector solar",
+            "hidratante",
+            "peluqueria",
+            "corte pelo",
+            "manicura",
+            "pedicura",
+            "bienestar",
+            "autocuidado",
+            "autoestima",
+            "habito saludable",
+            "reto saludable",
+            "paso diario",
+            "pasos"
         )
 
         val palabrasPersonal = listOf(
-            "banco", "transferencia", "pago", "factura personal",
-            "impuesto", "declaracion", "seguro", "poliza",
-            "inversion", "ahorro", "presupuesto",
-            "tramite", "cita gobierno", "cita banco", "renovar",
-            "pasaporte", "dni", "cedula", "licencia conducir",
-            "registro", "notaria", "abogado",
-            "amigo", "amiga", "cena", "comida con", "cafe con",
-            "cumpleanos", "aniversario", "boda", "evento",
-            "pelicula", "concierto", "teatro", "exposicion",
-            "viaje", "vuelo", "hotel", "reserva",
-            "leer", "libro", "curso", "aprender", "idioma",
-            "ingles", "podcast", "video tutorial"
+            "banco",
+            "transferencia",
+            "pago",
+            "factura personal",
+            "impuesto",
+            "declaracion",
+            "seguro",
+            "poliza",
+            "inversion",
+            "ahorro",
+            "presupuesto",
+            "tramite",
+            "cita gobierno",
+            "cita banco",
+            "renovar",
+            "pasaporte",
+            "dni",
+            "cedula",
+            "licencia conducir",
+            "registro",
+            "notaria",
+            "abogado",
+            "amigo",
+            "amiga",
+            "cena",
+            "comida con",
+            "cafe con",
+            "cumpleanos",
+            "aniversario",
+            "boda",
+            "evento",
+            "pelicula",
+            "concierto",
+            "teatro",
+            "exposicion",
+            "viaje",
+            "vuelo",
+            "hotel",
+            "reserva",
+            "leer",
+            "libro",
+            "curso",
+            "aprender",
+            "idioma",
+            "ingles",
+            "podcast",
+            "video tutorial"
         )
 
-        val palabrasCompras = listOf("compra", "supermercado", "super", "lista", "mercado", "tienda", "comprar")
+        val palabrasCompras =
+            listOf("compra", "supermercado", "super", "lista", "mercado", "tienda", "comprar")
 
         data class CandidatoCategoria(val nombre: String, val palabras: List<String>)
 
@@ -274,13 +519,10 @@ fun AddTareaDialog(
             add(CandidatoCategoria(catPersonal, palabrasPersonal))
         }
 
-        val ganador = candidatos
-            .map { cat ->
+        val ganador = candidatos.map { cat ->
                 val hits = cat.palabras.count { kw -> text.contains(kw.normalize()) }
                 cat to hits
-            }
-            .filter { (_, hits) -> hits > 0 }
-            .maxByOrNull { (_, hits) -> hits }
+            }.filter { (_, hits) -> hits > 0 }.maxByOrNull { (_, hits) -> hits }
 
         if (ganador != null) {
             categoriaSelected = ganador.first.nombre
@@ -425,9 +667,7 @@ fun AddTareaDialog(
                                     })
                                 CategoryChip(
                                     item = CategoryItem(
-                                        "Días específicos",
-                                        VerdeSalvia,
-                                        ""
+                                        "Días específicos", VerdeSalvia, ""
                                     ),
                                     isSelected = tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS,
                                     onClick = {
@@ -465,8 +705,7 @@ fun AddTareaDialog(
                                             Box(contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = day.getDisplayName(
-                                                        JavaTextStyle.NARROW,
-                                                        locale
+                                                        JavaTextStyle.NARROW, locale
                                                     ),
                                                     color = if (isSelected) Color.White else TextoGrisOscuro,
                                                     fontWeight = FontWeight.Bold,
@@ -527,9 +766,7 @@ fun AddTareaDialog(
                 onClick = {
                     val selectedCat =
                         baseCategorias.find { it.name == categoriaSelected } ?: CategoryItem(
-                            categoriaSelected,
-                            VerdeSalvia,
-                            "#81B29A"
+                            categoriaSelected, VerdeSalvia, "#81B29A"
                         )
                     if (titulo.isNotBlank()) {
                         val duracion =
@@ -548,11 +785,9 @@ fun AddTareaDialog(
                                 descripcion = tarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
                                 fechaHoraFin = if (esRepetible) LocalDateTime.of(
-                                    selectedDate,
-                                    selectedStartTime
+                                    selectedDate, selectedStartTime
                                 ).plusMinutes(duracion.toLong()) else LocalDateTime.of(
-                                    selectedDate,
-                                    selectedEndTime
+                                    selectedDate, selectedEndTime
                                 ),
                                 categoria = selectedCat.name,
                                 colorHex = selectedCat.hex,
@@ -582,12 +817,10 @@ fun AddTareaDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    color = TerracotaSuave
+                    stringResource(R.string.action_cancel), color = TerracotaSuave
                 )
             }
-        }
-    )
+        })
 
     if (showDatePicker) {
         AdaDatePickerWheelDialog(
@@ -627,9 +860,7 @@ fun AddTareaDialog(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AdaDatePickerWheelDialog(
-    initialDate: LocalDate,
-    onDismiss: () -> Unit,
-    onConfirm: (LocalDate) -> Unit
+    initialDate: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate) -> Unit
 ) {
     var selectedDay by remember { mutableIntStateOf(initialDate.dayOfMonth) }
     var selectedMonth by remember { mutableIntStateOf(initialDate.monthValue) }
@@ -651,9 +882,7 @@ fun AdaDatePickerWheelDialog(
     val years = (2024..2030).map { it.toString() }
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = BaseCrema,
-            modifier = Modifier.padding(24.dp)
+            shape = RoundedCornerShape(28.dp), color = BaseCrema, modifier = Modifier.padding(24.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -696,8 +925,7 @@ fun AdaDatePickerWheelDialog(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
                         Text(
-                            stringResource(R.string.action_cancel),
-                            color = TerracotaSuave
+                            stringResource(R.string.action_cancel), color = TerracotaSuave
                         )
                     }
                     TextButton(onClick = {
@@ -705,9 +933,7 @@ fun AdaDatePickerWheelDialog(
                             val finalDate = LocalDate.of(selectedYear, selectedMonth, 1);
                             val maxDay = finalDate.lengthOfMonth(); onConfirm(
                                 LocalDate.of(
-                                    selectedYear,
-                                    selectedMonth,
-                                    selectedDay.coerceIn(1, maxDay)
+                                    selectedYear, selectedMonth, selectedDay.coerceIn(1, maxDay)
                                 )
                             )
                         } catch (e: Exception) {
@@ -729,21 +955,15 @@ fun AdaDatePickerWheelDialog(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AdaTimeWheelPickerDialog(
-    title: String,
-    initialTime: LocalTime,
-    onDismiss: () -> Unit,
-    onConfirm: (LocalTime) -> Unit
+    title: String, initialTime: LocalTime, onDismiss: () -> Unit, onConfirm: (LocalTime) -> Unit
 ) {
     var selectedHour by remember { mutableIntStateOf(initialTime.hour) }
     var selectedMinute by remember { mutableIntStateOf(initialTime.minute) }
     Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = BaseCrema,
-            modifier = Modifier.padding(24.dp)
+            shape = RoundedCornerShape(28.dp), color = BaseCrema, modifier = Modifier.padding(24.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -770,9 +990,7 @@ fun AdaTimeWheelPickerDialog(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        ":",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = TextoGrisOscuro
+                        ":", style = MaterialTheme.typography.headlineLarge, color = TextoGrisOscuro
                     )
                     WheelColumn(
                         items = (0..59).map { it.toString().padStart(2, '0') },
@@ -785,15 +1003,13 @@ fun AdaTimeWheelPickerDialog(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
                         Text(
-                            stringResource(R.string.action_cancel),
-                            color = TerracotaSuave
+                            stringResource(R.string.action_cancel), color = TerracotaSuave
                         )
                     }
                     TextButton(onClick = {
                         onConfirm(
                             LocalTime.of(
-                                selectedHour,
-                                selectedMinute
+                                selectedHour, selectedMinute
                             )
                         )
                     }) {
@@ -883,18 +1099,15 @@ fun TimeSelectionCard(label: String, time: LocalTime, modifier: Modifier, onClic
 
 @Composable
 fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .clickable { onClick() }
-            .height(40.dp)
-            .padding(horizontal = 4.dp),
+    Surface(modifier = Modifier
+        .clickable { onClick() }
+        .height(40.dp)
+        .padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) item.color else item.color.copy(alpha = 0.15f),
         border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
-            1.dp,
-            item.color.copy(alpha = 0.3f)
-        )
-    ) {
+            1.dp, item.color.copy(alpha = 0.3f)
+        )) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
                 text = item.name,
@@ -956,9 +1169,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Rounded.AccessTime,
-                        null,
-                        tint = VerdeSalvia
+                        Icons.Rounded.AccessTime, null, tint = VerdeSalvia
                     ); Spacer(modifier = Modifier.width(12.dp)); Text(
                     text = if (selectedTime == null) stringResource(
                         R.string.dialog_no_time
@@ -975,8 +1186,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
             Button(
                 onClick = {
                     if (nombreRitual.isNotBlank()) onConfirm(
-                        nombreRitual,
-                        selectedTime
+                        nombreRitual, selectedTime
                     )
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
@@ -993,8 +1203,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    color = TerracotaSuave
+                    stringResource(R.string.action_cancel), color = TerracotaSuave
                 )
             }
         })
@@ -1078,10 +1287,9 @@ fun AddNotaDialog(
                             items(tareasHoy) { tarea ->
                                 val isSelected = selectedTaskId == tarea.id
                                 TareaChip(
-                                    tarea = tarea,
-                                    isSelected = isSelected,
-                                    onClick = { selectedTaskId = if (isSelected) null else tarea.id }
-                                )
+                                    tarea = tarea, isSelected = isSelected, onClick = {
+                                        selectedTaskId = if (isSelected) null else tarea.id
+                                    })
                             }
                         }
                     }
@@ -1092,9 +1300,7 @@ fun AddNotaDialog(
             Button(
                 onClick = {
                     if (titulo.isNotBlank() && contenido.isNotBlank()) onConfirm(
-                        titulo,
-                        contenido,
-                        selectedTaskId
+                        titulo, contenido, selectedTaskId
                     )
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
@@ -1110,8 +1316,7 @@ fun AddNotaDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    color = TerracotaSuave
+                    stringResource(R.string.action_cancel), color = TerracotaSuave
                 )
             }
         })
@@ -1120,15 +1325,13 @@ fun AddNotaDialog(
 @Composable
 fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
     val color = tarea.colorHex.toComposeColor()
-    Surface(
-        modifier = Modifier
-            .clickable { onClick() }
-            .width(140.dp)
-            .height(50.dp),
+    Surface(modifier = Modifier
+        .clickable { onClick() }
+        .width(140.dp)
+        .height(50.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) color else color.copy(alpha = 0.1f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
+        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
