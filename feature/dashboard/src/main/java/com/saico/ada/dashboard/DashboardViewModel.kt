@@ -68,7 +68,7 @@ class DashboardViewModel @Inject constructor(
             todasLasTareas = todasLasTareasVisibles,
             registrosBienestar = data.registrosBienestar,
             notas = data.notas,
-            userName = userName ?: "Jorge",
+            userName = userName ?: "",
             greetingRes = greetingRes,
             isMother = isMother,
             adaSuggestionRes = suggestion.mensajeRes,

@@ -3,6 +3,7 @@
     <string name="nav_home">Inicio</string>
     <string name="nav_agenda">Agenda</string>
     <string name="nav_wellness">Bienestar</string>
+    <string name="charging">Carga</string>
     <string name="nav_notes">Notas</string>
 
     <!-- Onboarding -->
@@ -174,4 +175,6 @@
     <string name="sug_mom_mid_action">El hábito se está formando. No rompas la cadena.</string>
     <string name="sug_mom_low">Llevas %1$d días activos.</string>
     <string name="sug_mom_low_action">Buen comienzo de racha. Sigue así.</string>
+
+    <string name="distribution_of_activities">Distribución de actividades</string>
 </resources>

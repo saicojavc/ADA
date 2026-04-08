@@ -159,7 +159,7 @@ fun BalanceBreakdownSection(tareas: List<Tarea>) {
 
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
         Text(
-            text = "Distribución de actividades",
+            text = stringResource(id = R.string.distribution_of_activities),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = TextoGrisOscuro
@@ -170,14 +170,14 @@ fun BalanceBreakdownSection(tareas: List<Tarea>) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BalanceInfoCard(
                 modifier = Modifier.weight(1f),
-                title = "Bienestar",
+                title = stringResource(id = R.string.nav_wellness),
                 count = bienestar.size,
                 color = VerdeSalvia,
                 icon = Icons.Rounded.SelfImprovement
             )
             BalanceInfoCard(
                 modifier = Modifier.weight(1f),
-                title = "Carga",
+                title = stringResource(id = R.string.charging),
                 count = carga.size,
                 color = TerracotaSuave,
                 icon = Icons.Rounded.HistoryEdu

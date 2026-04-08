@@ -174,4 +174,7 @@
     <string name="sug_mom_mid_action">The habit is forming. Don\'t break the chain.</string>
     <string name="sug_mom_low">You have been active for %1$d days.</string>
     <string name="sug_mom_low_action">Good start to the streak. Keep it up.</string>
+
+    <string name="distribution_of_activities">Distribution of activities</string>
+    <string name="charging">Charging</string>
 </resources>

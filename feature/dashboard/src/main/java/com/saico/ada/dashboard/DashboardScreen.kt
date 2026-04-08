@@ -112,10 +112,11 @@ fun Context(
             )
         }
 
+        // FAB posicionado manualmente para estar encima del fondo opaco y separado de la nav bar
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp, end = 16.dp),
+                .padding(bottom = 120.dp, end = 20.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
             AdaSpeedDialFab(
