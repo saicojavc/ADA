@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.*
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -62,6 +63,15 @@ class DashboardViewModel @Inject constructor(
 
         val suggestion = getSmartSuggestionUseCase(tareasHoyFinal)
 
+        // Calcular horas de sueño de las tareas completadas hoy
+        val keywordsSueno = listOf("sueño", "descanso", "sleep", "rest")
+        val horasSuenoCalculadas = tareasHoyFinal
+            .filter { it.estaCompletada && keywordsSueno.any { kw -> it.titulo.lowercase().contains(kw) } }
+            .sumOf { 
+                val duracion = ChronoUnit.MINUTES.between(it.fechaHoraInicio, it.fechaHoraFin)
+                duracion.toDouble() / 60.0
+            }.toFloat()
+
         DashboardState.Success(
             tareasHoy = tareasHoyFinal,
             tareasAgenda = tareasAgendaFinal,
@@ -76,7 +86,8 @@ class DashboardViewModel @Inject constructor(
             adaSuggestionArgs = suggestion.mensajeArgs,
             adaActionArgs = suggestion.accionArgs,
             suggestionType = suggestion.tipo,
-            balanceScore = balanceScore
+            balanceScore = balanceScore,
+            horasSueno = horasSuenoCalculadas
         ) as DashboardState
     }.catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState.Loading)

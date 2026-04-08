@@ -56,6 +56,7 @@ fun WellnessScreen(
     val successState = uiState as? DashboardState.Success
     val registros = successState?.registrosBienestar ?: emptyList()
     val balanceScore = successState?.balanceScore ?: 0
+    val horasSueno = successState?.horasSueno ?: 0f
     val tareasHoy = successState?.tareasHoy ?: emptyList()
     val context = LocalContext.current
 
@@ -88,11 +89,11 @@ fun WellnessScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp)
+        contentPadding = PaddingValues(bottom = 120.dp)
     ) {
         item { WellnessHeaderOrganico(balanceScore) }
         item { BalanceBreakdownSection(tareasHoy) }
-        item { SleepWaveSection(registros, timeOfDay) }
+        item { SleepWaveSection(horasSueno, timeOfDay) }
         item {
             StepsSection(
                 registros = registros,
@@ -204,9 +205,7 @@ fun BalanceInfoCard(modifier: Modifier, title: String, count: Int, color: Color,
 }
 
 @Composable
-fun SleepWaveSection(registros: List<Bienestar>, timeOfDay: TimeOfDay) {
-    val sueno = registros.find { it.tipo == "Sueño" }?.valorActual ?: 0f
-    
+fun SleepWaveSection(horasSueno: Float, timeOfDay: TimeOfDay) {
     val config = when(timeOfDay) {
         TimeOfDay.DAY -> Triple(AmbarNeutro, Icons.Rounded.LightMode, stringResource(R.string.wellness_day))
         TimeOfDay.SUNSET -> Triple(TerracotaSuave, Icons.Rounded.WbTwilight, stringResource(R.string.wellness_sunset))
@@ -224,7 +223,7 @@ fun SleepWaveSection(registros: List<Bienestar>, timeOfDay: TimeOfDay) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Text("${stringResource(R.string.wellness_rest)} (${config.third})", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.weight(1f))
-                Text("${sueno.toInt()}h", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("${horasSueno.toInt()}h", color = Color.White, fontWeight = FontWeight.Bold)
             }
             
             Box(modifier = Modifier.fillMaxWidth().height(80.dp).padding(top = 16.dp)) {

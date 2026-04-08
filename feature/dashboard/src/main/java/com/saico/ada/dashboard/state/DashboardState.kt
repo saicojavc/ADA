@@ -22,7 +22,8 @@ sealed class DashboardState {
         val adaSuggestionArgs: List<Any> = emptyList(),
         val adaActionArgs: List<Any> = emptyList(),
         val suggestionType: SuggestionType,
-        val balanceScore: Int
+        val balanceScore: Int,
+        val horasSueno: Float = 0f
     ) : DashboardState()
 
     data class Error(val message: String) : DashboardState()
