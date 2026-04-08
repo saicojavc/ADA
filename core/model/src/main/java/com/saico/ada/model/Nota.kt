@@ -8,5 +8,6 @@ data class Nota(
     val contenido: String,
     val fechaCreacion: LocalDateTime,
     val colorEtiquetaHex: String,
-    val esIdeaBrillante: Boolean = false
+    val esIdeaBrillante: Boolean = false,
+    val tareaId: Int? = null
 )

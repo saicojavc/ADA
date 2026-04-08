@@ -1,5 +1,194 @@
 <resources>
-    <string name="home">Inicio</string>
-    <string name="agenda">Agenda</string>
-    <string name="profile">Perfil</string>
+    <!-- Navegación -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_agenda">Agenda</string>
+    <string name="nav_wellness">Bienestar</string>
+    <string name="charging">Carga</string>
+    <string name="nav_notes">Notas</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">Bienvenida a ADA</string>
+    <string name="onboarding_subtitle">Tu LifeOS personal</string>
+    <string name="onboarding_name_label">¿Cómo te llamas?</string>
+    <string name="onboarding_occupation_label">¿A qué te dedicas?</string>
+    <string name="onboarding_mother_label">Soy madre</string>
+    <string name="onboarding_button">Comenzar mi viaje</string>
+
+    <!-- Home -->
+    <string name="home_your_day">Tu Día</string>
+    <string name="home_analyzing">Analizando tu día...</string>
+    <string name="home_preparing_suggestions">ADA está preparando tus sugerencias.</string>
+    <string name="home_empty_title">Tu día está despejado.</string>
+    <string name="home_empty_message">No tienes tareas pendientes. Disfruta de este espacio para ti.</string>
+    <string name="home_greeting_morning">Buenos días, %1$s</string>
+    <string name="home_greeting_afternoon">Buenas tardes, %1$s</string>
+    <string name="home_greeting_evening">Buenas noches, %1$s</string>
+
+    <!-- Acciones Comunes -->
+    <string name="action_edit">Editar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_options">Opciones</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_create">Crear</string>
+    <string name="action_confirm">Confirmar</string>
+    <string name="action_close">Cerrar</string>
+
+    <!-- FAB -->
+    <string name="fab_new_task">Nueva Tarea</string>
+    <string name="fab_quick_note">Nota Rápida</string>
+    <string name="fab_close_menu">Cerrar menú</string>
+    <string name="fab_add_new">Añadir nuevo</string>
+
+    <!-- Diálogos -->
+    <string name="dialog_new_task">Nueva Tarea</string>
+    <string name="dialog_edit_task">Editar Tarea</string>
+    <string name="dialog_task_title_label">¿Qué tienes pendiente?</string>
+    <string name="dialog_category_label">Categoría</string>
+    <string name="dialog_suggested_category">Categoría sugerida</string>
+    <string name="dialog_date_label">Fecha</string>
+    <string name="dialog_start_label">Inicio</string>
+    <string name="dialog_end_label">Fin</string>
+    <string name="dialog_new_ritual">Nuevo Ritual Diario</string>
+    <string name="dialog_ritual_hint">Dale un nombre a tu nuevo ritual y asígnale una hora para verlo en tu día.</string>
+    <string name="dialog_ritual_name_label">Nombre del Ritual</string>
+    <string name="dialog_no_time">Sin hora establecida</string>
+    <string name="dialog_scheduled_at">Programado: %1$s</string>
+    <string name="dialog_new_note">Nueva Nota</string>
+    <string name="dialog_edit_note">Editar Nota</string>
+    <string name="dialog_note_title">Título</string>
+    <string name="dialog_note_content">Contenido</string>
+    <string name="dialog_select_date">Selecciona la fecha</string>
+    <string name="dialog_select_time">Selecciona la hora</string>
+    <string name="dialog_select_hour">Selecciona la hora</string>
+    <string name="dialog_unbalanced">DESEQUILIBRADO</string>
+    <string name="dialog_link_to_task">Vincular a una tarea de hoy</string>
+    <string name="content_desc_delete_note">Borrar nota</string>
+
+    <!-- Bienestar -->
+    <string name="wellness_title">Tu Bienestar</string>
+    <string name="wellness_balance">EQUILIBRIO</string>
+    <string name="wellness_rituals">Tus Rituales</string>
+    <string name="wellness_rest">Descanso</string>
+    <string name="wellness_movement">Movimiento</string>
+    <string name="wellness_steps_today">%1$d pasos hoy</string>
+    <string name="wellness_ritual_daily">Ritual diario</string>
+    <string name="wellness_completed">¡Completado!</string>
+    <string name="wellness_pending">Ritual pendiente</string>
+    <string name="wellness_motivation">¡Vas por muy buen camino! ADA analiza tu equilibrio diario.</string>
+    <string name="wellness_activate_counter">Toca aquí para activar el contador</string>
+    <string name="wellness_sleep_analysis">ADA está analizando tu uso de pantalla para estimar tu sueño.</string>
+    <string name="wellness_day">Día</string>
+    <string name="wellness_sunset">Ocaso</string>
+    <string name="wellness_night">Noche</string>
+
+    <!-- Agenda -->
+    <string name="agenda_free_day">Día libre</string>
+    <string name="agenda_empty_message">No hay tareas ni rituales agendados para este día.</string>
+    <string name="agenda_items_count">%1$d ítems</string>
+    <string name="agenda_today_prefix">Hoy · %1$s</string>
+
+    <!-- Categorías -->
+    <string name="cat_work">Trabajo</string>
+    <string name="cat_home">Hogar</string>
+    <string name="cat_wellbeing">Bienestar</string>
+    <string name="cat_maternity">Maternidad</string>
+    <string name="cat_personal">Personal</string>
+
+    <!-- Notas -->
+    <string name="notes_title">Mis Pensamientos</string>
+    <string name="notes_empty_title">Tu muro de pensamientos está vacío.</string>
+    <string name="notes_empty_message">Usa el botón + para soltar tus ideas y liberar carga mental.</string>
+
+    <!-- Meses -->
+    <string name="month_jan">Ene</string>
+    <string name="month_feb">Feb</string>
+    <string name="month_mar">Mar</string>
+    <string name="month_apr">Abr</string>
+    <string name="month_may">May</string>
+    <string name="month_jun">Jun</string>
+    <string name="month_jul">Jul</string>
+    <string name="month_aug">Ago</string>
+    <string name="month_sep">Sep</string>
+    <string name="month_oct">Oct</string>
+    <string name="month_nov">Nov</string>
+    <string name="month_dec">Dic</string>
+
+    <!-- Notificaciones -->
+    <string name="notif_early_title">ADA: Tarea en 30 min</string>
+    <string name="notif_exact_title">ADA: Es el momento</string>
+    <string name="notif_channel_name">Avisos Críticos ADA</string>
+
+    <!-- Inteligencia ADA - Carga -->
+    <string name="sug_load_vencidas_pendientes">Tienes %1$d tarea(s) vencida(s) y %2$d pendientes.</string>
+    <string name="sug_load_vencidas_pendientes_action">ADA recomienda: atiende las vencidas primero y delega 3.</string>
+    <string name="sug_load_vencidas_only">Hay %1$d tarea(s) que ya pasaron su hora.</string>
+    <string name="sug_load_vencidas_only_action">Revísalas ahora — ¿siguen siendo relevantes?</string>
+    <string name="sug_load_high">Hoy tienes %1$d tareas en la lista.</string>
+    <string name="sug_load_high_action">Elige tus 3 más importantes. El resto puede esperar.</string>
+    <string name="sug_load_mid">Carga moderada: %1$d tareas por delante.</string>
+    <string name="sug_load_mid_action">Ordénalas por impacto antes de empezar.</string>
+    <string name="sug_load_low">Lista ligera hoy — %1$d tarea(s).</string>
+    <string name="sug_load_low_action">Aprovecha el ritmo pausado para trabajar con profundidad.</string>
+
+    <!-- Inteligencia ADA - Gaps -->
+    <string name="sug_gap_short">Tienes %1$d min antes de \'%2$s\'.</string>
+    <string name="sug_gap_short_action">Haz algo micro: responde un mensaje, bebe agua, estira el cuello.</string>
+    <string name="sug_gap_ideal">%1$d min libres antes de \'%2$s\'.</string>
+    <string name="sug_gap_ideal_action">Hueco ideal para una sesión Pomodoro corta. ¿Qué quieres avanzar?</string>
+    <string name="sug_gap_long">Tienes %1$d min hasta \'%2$s\'.</string>
+    <string name="sug_gap_long_action">Bloque largo: entra en modo deep work. Cierra notificaciones.</string>
+    <string name="sug_gap_far">Tu próxima tarea, \'%1$s\', está aún lejos.</string>
+    <string name="sug_gap_far_action">Sin presión de tiempo — planifica el día con calma.</string>
+
+    <!-- Inteligencia ADA - Franja Horaria -->
+    <string name="sug_time_early">El día acaba de comenzar.</string>
+    <string name="sug_time_early_action">Activa el cuerpo antes que la mente — 5 min de movimiento.</string>
+    <string name="sug_time_morning">Mañana temprana: tu cerebro está en su mejor momento.</string>
+    <string name="sug_time_morning_action">Ataca la tarea más difícil ahora, antes de que lleguen interrupciones.</string>
+    <string name="sug_time_peak">Pico cognitivo. Hora de trabajo profundo.</string>
+    <string name="sug_time_peak_action">Modo deep work: silencia todo y entra en flujo.</string>
+    <string name="sug_time_noon">Pausa de mediodía.</string>
+    <string name="sug_time_noon_action">Come sin pantallas y recuerda hidratarte bien.</string>
+    <string name="sug_time_afternoon">Valle de la tarde — energía baja.</string>
+    <string name="sug_time_afternoon_action">Una siesta de 10-20 min o un paseo corto lo revierten.</string>
+    <string name="sug_time_late">Segundo pico de la tarde.</string>
+    <string name="sug_time_late_action">Buen momento para reuniones, revisiones o tareas creativas.</string>
+    <string name="sug_time_end">El día productivo termina.</string>
+    <string name="sug_time_end_action">Cierra pendientes y prepara tu lista de mañana.</string>
+    <string name="sug_time_night">Hora de desconectar.</string>
+    <string name="sug_time_night_action">Brain dump rápido: vacía la mente antes de dormir.</string>
+    <string name="sug_time_sleep">Deberías estar descansando.</string>
+    <string name="sug_time_sleep_action">Duerme — tu productividad mañana depende de esto.</string>
+
+    <!-- Inteligencia ADA - Bienestar -->
+    <string name="sug_well_zero">Aún no has tachado nada hoy.</string>
+    <string name="sug_well_zero_action">Empieza por la tarea más pequeña — el momentum comienza con una.</string>
+    <string name="sug_well_high">Llevas %1$d de %2$d tareas completadas hoy.</string>
+    <string name="sug_well_high_action">Estás arrasando. Tómate un momento para reconocerlo.</string>
+    <string name="sug_well_mid">Vas a la mitad — %1$d de %2$d listas.</string>
+    <string name="sug_well_mid_action">Buen ritmo. Mantén el foco en las siguientes más importantes.</string>
+    <string name="sug_well_low">Todavía queda terreno por recorrer hoy.</string>
+    <string name="sug_well_low_action">Una tarea a la vez. ¿Cuál es la siguiente acción concreta?</string>
+
+    <!-- Inteligencia ADA - Momentum -->
+    <string name="sug_mom_high">¡%1$d días consecutivos activo!</string>
+    <string name="sug_mom_high_action">Eres imparable. Protege esa racha — haz aunque sea una tarea hoy.</string>
+    <string name="sug_mom_mid">%1$d días en fila avanzando.</string>
+    <string name="sug_mom_mid_action">El hábito se está formando. No rompas la cadena.</string>
+    <string name="sug_mom_low">Llevas %1$d días activos.</string>
+    <string name="sug_mom_low_action">Buen comienzo de racha. Sigue así.</string>
+
+    <string name="distribution_of_activities">Distribución de actividades</string>
+
+    <!-- Tareas Repetibles -->
+    <string name="dialog_delete_repeatable_title">Eliminar tarea repetible</string>
+    <string name="dialog_delete_repeatable_message">¿Quieres eliminar solo esta instancia o cancelar todas las repeticiones futuras?</string>
+    <string name="dialog_delete_repeatable_cancel_all">Cancelar todas</string>
+    <string name="dialog_delete_repeatable_only_once">Solo esta vez</string>
+
+    <!-- Notas vinculadas -->
+    <string name="task_notes_title">Notas de la tarea</string>
+    <string name="task_notes_empty">No hay notas vinculadas a esta tarea.</string>
+    <string name="action_view_notes">Ver notas (%1$d)</string>
 </resources>

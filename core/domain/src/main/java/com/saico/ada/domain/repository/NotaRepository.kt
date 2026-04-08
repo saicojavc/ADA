@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface NotaRepository {
     fun getAllNotas(): Flow<List<Nota>>
+    fun getNotasByTareaId(taskId: Int): Flow<List<Nota>>
     suspend fun insertNota(nota: Nota)
     suspend fun deleteNota(nota: Nota)
 }

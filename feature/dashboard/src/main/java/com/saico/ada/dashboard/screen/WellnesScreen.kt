@@ -26,7 +26,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +38,9 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.model.Bienestar
+import com.saico.ada.model.Tarea
 import com.saico.ada.ui.theme.*
+import com.saico.ada.ui.R
 import java.time.LocalTime
 import kotlin.math.sin
 
@@ -51,6 +55,9 @@ fun WellnessScreen(
 ) {
     val successState = uiState as? DashboardState.Success
     val registros = successState?.registrosBienestar ?: emptyList()
+    val balanceScore = successState?.balanceScore ?: 0
+    val horasSueno = successState?.horasSueno ?: 0f
+    val tareasHoy = successState?.tareasHoy ?: emptyList()
     val context = LocalContext.current
 
     // Determinar el momento del día para la estética circadiana
@@ -80,22 +87,13 @@ fun WellnessScreen(
         }
     }
 
-    val balanceScore = if (successState != null) {
-        val tareas = successState.tareasHoy
-        val countCarga = tareas.count { it.categoria in listOf("Trabajo", "Hogar", "Maternidad") }
-        val countBienestar = tareas.count { it.categoria == "Bienestar" }
-        val totalTareas = (countCarga + countBienestar).coerceAtLeast(1)
-        val ratioBienestar = countBienestar.toFloat() / totalTareas.toFloat()
-        val score = (100 - (kotlin.math.abs(0.5f - ratioBienestar) * 200)).toInt()
-        score.coerceIn(0, 100)
-    } else 0
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp)
+        contentPadding = PaddingValues(bottom = 120.dp)
     ) {
         item { WellnessHeaderOrganico(balanceScore) }
-        item { SleepWaveSection(registros, timeOfDay) }
+        item { BalanceBreakdownSection(tareasHoy) }
+        item { SleepWaveSection(horasSueno, timeOfDay) }
         item {
             StepsSection(
                 registros = registros,
@@ -140,7 +138,13 @@ fun WellnessHeaderOrganico(score: Int) {
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("$score%", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = if (isUnbalanced) TerracotaSuave else TextoGrisOscuro)
-                    Text(if (isUnbalanced) "DESEQUILIBRADO" else "EQUILIBRIO", style = MaterialTheme.typography.labelLarge, letterSpacing = if (isUnbalanced) 1.sp else 3.sp, color = (if (isUnbalanced) TerracotaSuave else TextoGrisOscuro).copy(alpha = 0.7f), fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isUnbalanced) stringResource(R.string.dialog_unbalanced) else stringResource(R.string.wellness_balance), 
+                        style = MaterialTheme.typography.labelLarge, 
+                        letterSpacing = if (isUnbalanced) 1.sp else 3.sp, 
+                        color = (if (isUnbalanced) TerracotaSuave else TextoGrisOscuro).copy(alpha = 0.7f), 
+                        fontWeight = FontWeight.Bold
+                    )
                     if (isUnbalanced) Icon(imageVector = Icons.Rounded.WarningAmber, contentDescription = null, tint = TerracotaSuave.copy(alpha = 0.5f), modifier = Modifier.size(20.dp).padding(top = 4.dp))
                 }
             }
@@ -149,13 +153,63 @@ fun WellnessHeaderOrganico(score: Int) {
 }
 
 @Composable
-fun SleepWaveSection(registros: List<Bienestar>, timeOfDay: TimeOfDay) {
-    val sueno = registros.find { it.tipo == "Sueño" }?.valorActual ?: 0f
-    
+fun BalanceBreakdownSection(tareas: List<Tarea>) {
+    val bienestarKeywords = listOf("bienestar", "wellbeing")
+    val bienestar = tareas.filter { it.categoria.lowercase() in bienestarKeywords }
+    val carga = tareas.filter { it.categoria.lowercase() !in bienestarKeywords }
+
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Text(
+            text = stringResource(id = R.string.distribution_of_activities),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = TextoGrisOscuro
+        )
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BalanceInfoCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(id = R.string.nav_wellness),
+                count = bienestar.size,
+                color = VerdeSalvia,
+                icon = Icons.Rounded.SelfImprovement
+            )
+            BalanceInfoCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(id = R.string.charging),
+                count = carga.size,
+                color = TerracotaSuave,
+                icon = Icons.Rounded.HistoryEdu
+            )
+        }
+    }
+}
+
+@Composable
+fun BalanceInfoCard(modifier: Modifier, title: String, count: Int, color: Color, icon: ImageVector) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = count.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = color)
+            Text(text = title, style = MaterialTheme.typography.labelMedium, color = color.copy(alpha = 0.8f))
+        }
+    }
+}
+
+@Composable
+fun SleepWaveSection(horasSueno: Float, timeOfDay: TimeOfDay) {
     val config = when(timeOfDay) {
-        TimeOfDay.DAY -> Triple(AmbarNeutro, Icons.Rounded.LightMode, "Día")
-        TimeOfDay.SUNSET -> Triple(TerracotaSuave, Icons.Rounded.WbTwilight, "Ocaso")
-        TimeOfDay.NIGHT -> Triple(Color(0xFF2D3142), Icons.Rounded.NightsStay, "Noche")
+        TimeOfDay.DAY -> Triple(AmbarNeutro, Icons.Rounded.LightMode, stringResource(R.string.wellness_day))
+        TimeOfDay.SUNSET -> Triple(TerracotaSuave, Icons.Rounded.WbTwilight, stringResource(R.string.wellness_sunset))
+        TimeOfDay.NIGHT -> Triple(Color(0xFF2D3142), Icons.Rounded.NightsStay, stringResource(R.string.wellness_night))
     }
 
     Card(
@@ -167,9 +221,9 @@ fun SleepWaveSection(registros: List<Bienestar>, timeOfDay: TimeOfDay) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(config.second, null, tint = Color.White)
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Descanso (${config.third})", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("${stringResource(R.string.wellness_rest)} (${config.third})", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.weight(1f))
-                Text("${sueno.toInt()}h", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("${horasSueno.toInt()}h", color = Color.White, fontWeight = FontWeight.Bold)
             }
             
             Box(modifier = Modifier.fillMaxWidth().height(80.dp).padding(top = 16.dp)) {
@@ -178,7 +232,7 @@ fun SleepWaveSection(registros: List<Bienestar>, timeOfDay: TimeOfDay) {
             
             if (timeOfDay == TimeOfDay.NIGHT) {
                 Text(
-                    "ADA está analizando tu uso de pantalla para estimar tu sueño.",
+                    stringResource(R.string.wellness_sleep_analysis),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 8.dp)
@@ -230,11 +284,11 @@ fun StepsSection(registros: List<Bienestar>, hasPermission: Boolean, onRequestPe
             }
             Spacer(modifier = Modifier.width(20.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Movimiento", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextoGrisOscuro)
+                Text(stringResource(R.string.wellness_movement), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextoGrisOscuro)
                 if (hasPermission) {
-                    Text("${pasos?.valorActual?.toInt() ?: 0} pasos hoy", style = MaterialTheme.typography.bodyMedium, color = TextoGrisOscuro.copy(alpha = 0.7f))
+                    Text(stringResource(R.string.wellness_steps_today, pasos?.valorActual?.toInt() ?: 0), style = MaterialTheme.typography.bodyMedium, color = TextoGrisOscuro.copy(alpha = 0.7f))
                 } else {
-                    Text("Toca aquí para activar el contador", style = MaterialTheme.typography.bodySmall, color = TerracotaSuave, modifier = Modifier.clickable { onRequestPermission() })
+                    Text(stringResource(R.string.wellness_activate_counter), style = MaterialTheme.typography.bodySmall, color = TerracotaSuave, modifier = Modifier.clickable { onRequestPermission() })
                 }
             }
         }

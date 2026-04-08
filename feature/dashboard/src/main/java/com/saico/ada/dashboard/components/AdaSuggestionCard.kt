@@ -1,4 +1,4 @@
-package com.saico.ada.ui.components
+package com.saico.ada.dashboard.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*

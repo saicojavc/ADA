@@ -10,14 +10,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.saico.ada.dashboard.components.*
+import com.saico.ada.dashboard.components.AddBienestarDialog
+import com.saico.ada.dashboard.components.AddNotaDialog
+import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.components.NavigationBar
 import com.saico.ada.dashboard.model.BottomAppBarItems
 import com.saico.ada.dashboard.screen.AgendaScreen
@@ -51,10 +57,12 @@ fun Context(
 ) {
     var selectedBottomAppBarItem by remember { mutableStateOf(BottomAppBarItems.HOME) }
     var isFabExpanded by remember { mutableStateOf(false) }
-    
+
     var showAddTareaDialog by remember { mutableStateOf(false) }
     var showAddBienestarDialog by remember { mutableStateOf(false) }
     var showAddNotaDialog by remember { mutableStateOf(false) }
+
+    val successState = uiState as? DashboardState.Success
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -78,12 +86,14 @@ fun Context(
                     when (selectedBottomAppBarItem) {
                         BottomAppBarItems.HOME -> HomeScreen(uiState, viewModel)
                         BottomAppBarItems.AGENDA -> AgendaScreen(
-                            todasLasTareas = (uiState as? DashboardState.Success)?.todasLasTareas ?: emptyList(),
+                            todasLasTareas = successState?.todasLasTareas ?: emptyList(),
+                            tareasDelDia = successState?.tareasAgenda ?: emptyList(),
                             selectedDate = agendaSelectedDate,
                             agendaViewMode = agendaViewMode,
                             onDateSelected = viewModel::onAgendaDateSelected,
                             onViewModeChanged = viewModel::onAgendaViewModeChanged,
                         )
+
                         BottomAppBarItems.WELLNES -> WellnessScreen(uiState, viewModel)
                         BottomAppBarItems.NOTES -> NotesScreen(uiState, viewModel)
                     }
@@ -103,10 +113,11 @@ fun Context(
             )
         }
 
+        // FAB posicionado manualmente para estar encima del fondo opaco y separado de la nav bar
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp, end = 16.dp),
+                .padding(bottom = 120.dp, end = 20.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
             AdaSpeedDialFab(
@@ -123,7 +134,7 @@ fun Context(
         }
 
         if (showAddTareaDialog) {
-            val isMother = (uiState as? DashboardState.Success)?.isMother ?: false
+            val isMother = successState?.isMother ?: false
             AddTareaDialog(
                 isMother = isMother,
                 onDismiss = { showAddTareaDialog = false },
@@ -146,9 +157,10 @@ fun Context(
 
         if (showAddNotaDialog) {
             AddNotaDialog(
+                tareasHoy = successState?.tareasHoy ?: emptyList(),
                 onDismiss = { showAddNotaDialog = false },
-                onConfirm = { titulo, contenido ->
-                    viewModel.addNote(titulo, contenido, "#F2CC8F")
+                onConfirm = { titulo, contenido, tareaId ->
+                    viewModel.addNote(titulo, contenido, "#F2CC8F", tareaId)
                     showAddNotaDialog = false
                 }
             )

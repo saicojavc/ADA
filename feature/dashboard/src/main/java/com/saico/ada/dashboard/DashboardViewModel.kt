@@ -6,33 +6,43 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saico.ada.dashboard.state.DashboardState
 import com.saico.ada.datastore.UserPrefs
-import com.saico.ada.domain.alarm.AlarmScheduler
 import com.saico.ada.domain.use_case.*
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
+import com.saico.ada.ui.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val getDashboardDataUseCase: GetDashboardDataUseCase,
     private val addNoteUseCase: AddNoteUseCase,
-    private val updateTaskUseCase: UpdateTaskUseCase,
-    private val deleteEntityUseCase: DeleteEntityUseCase,
-    private val addBienestarUseCase: AddBienestarUseCase,
-    private val alarmScheduler: AlarmScheduler,
+    private val updateNoteUseCase: UpdateNoteUseCase,
+    private val deleteNoteUseCase: DeleteNoteUseCase,
     private val userPrefs: UserPrefs,
-    private val getSmartSuggestionUseCase: GetSmartSuggestionUseCase
+    private val getSmartSuggestionUseCase: GetSmartSuggestionUseCase,
+    private val marcarTareaCompletadaUseCase: MarcarTareaCompletadaUseCase,
+    private val getBalanceScoreUseCase: GetBalanceScoreUseCase,
+    private val getGreetingUseCase: GetGreetingUseCase,
+    private val getTasksForDateUseCase: GetTasksForDateUseCase,
+    private val getTasksForMonthUseCase: GetTasksForMonthUseCase,
+    private val addTareaUseCase: AddTareaUseCase,
+    private val deleteTareaUseCase: DeleteTareaUseCase,
+    private val toggleRitualUseCase: ToggleRitualUseCase,
+    private val addRitualUseCase: AddRitualUseCase,
+    private val getInactivitySleepUseCase: GetInactivitySleepUseCase
 ) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val _selectedAgendaDate = MutableStateFlow(LocalDate.now())
+
     @RequiresApi(Build.VERSION_CODES.O)
     val selectedAgendaDate: StateFlow<LocalDate> = _selectedAgendaDate.asStateFlow()
 
@@ -43,97 +53,133 @@ class DashboardViewModel @Inject constructor(
     val state: StateFlow<DashboardState> = combine(
         getDashboardDataUseCase(),
         _selectedAgendaDate,
-        userPrefs.userName,
-        userPrefs.isMother
-    ) { data, agendaDate, userName, isMother ->
+        combine(userPrefs.userName, userPrefs.isMother) { name, mother -> name to mother },
+        getBalanceScoreUseCase(),
+        getInactivitySleepUseCase()
+    ) { data, agendaDate, userPref, balanceScore, autoSleepHours ->
+        val userName = userPref.first
+        val isMother = userPref.second
         val today = LocalDate.now()
-        val now = LocalTime.now()
 
-        val greeting = when (now.hour) {
-            in 5..12 -> "Buenos días"
-            in 13..19 -> "Buenas tardes"
-            else -> "Buenas noches"
-        }
-        val fullGreeting = "$greeting, ${userName ?: ""}"
-
-        // --- LÓGICA DE INTELIGENCIA ADA ---
-        val suggestion = getSmartSuggestionUseCase(data.tareas.filter { it.fechaHoraInicio.toLocalDate() == today })
-
-        val habitosUnicos = data.registrosBienestar
-            .filter { it.horaProgramada != null }
-            .distinctBy { it.tipo }
-
-        fun getRitualForDate(tipo: String, date: LocalDate): Bienestar {
-            val registroExistente = data.registrosBienestar.find { it.tipo == tipo && it.fecha.toLocalDate() == date }
-            if (registroExistente != null) return registroExistente
-            val configOriginal = data.registrosBienestar.find { it.tipo == tipo }!!
-            return configOriginal.copy(id = 0, valorActual = 0f, fecha = date.atTime(configOriginal.horaProgramada ?: LocalTime.now()))
+        val greetingRes = when (getGreetingUseCase()) {
+            GreetingTime.MORNING -> R.string.home_greeting_morning
+            GreetingTime.AFTERNOON -> R.string.home_greeting_afternoon
+            GreetingTime.EVENING -> R.string.home_greeting_evening
         }
 
-        val ritualesHoy = habitosUnicos.map { getRitualForDate(it.tipo, today) }
-        val ritualesAgenda = habitosUnicos.map { getRitualForDate(it.tipo, agendaDate) }
-        val tareasHoy = data.tareas.filter { it.fechaHoraInicio.toLocalDate() == today }
-        val tareasAgenda = data.tareas.filter { it.fechaHoraInicio.toLocalDate() == agendaDate }
+        val tareasHoyFinal = getTasksForDateUseCase(data.tareas, data.excepciones, today)
+        val tareasAgendaFinal = getTasksForDateUseCase(data.tareas, data.excepciones, agendaDate)
+        val todasLasTareasVisibles =
+            getTasksForMonthUseCase(data.tareas, data.excepciones, agendaDate)
+
+        val suggestion = getSmartSuggestionUseCase(tareasHoyFinal)
+
+        // Calcular horas de sueño de las tareas completadas hoy
+        val keywordsSueno = listOf("sueño", "descanso", "sleep", "rest")
+        val manualSleepHours = tareasHoyFinal
+            .filter {
+                it.estaCompletada && keywordsSueno.any { kw ->
+                    it.titulo.lowercase().contains(kw)
+                }
+            }
+            .sumOf {
+                val duracion = ChronoUnit.MINUTES.between(it.fechaHoraInicio, it.fechaHoraFin)
+                duracion.toDouble() / 60.0
+            }.toFloat()
+
+        // El sueño total es el máximo entre lo manual y lo automático (evita duplicar si el usuario pone la tarea)
+        val totalSleepHours = maxOf(manualSleepHours, autoSleepHours)
 
         DashboardState.Success(
-            tareasHoy = tareasHoy,
-            tareasAgenda = tareasAgenda,
-            todasLasTareas = data.tareas,
+            tareasHoy = tareasHoyFinal,
+            tareasAgenda = tareasAgendaFinal,
+            todasLasTareas = todasLasTareasVisibles,
             registrosBienestar = data.registrosBienestar,
             notas = data.notas,
-            userName = userName ?: "Jorge",
-            greeting = fullGreeting,
+            userName = userName ?: "",
+            greetingRes = greetingRes,
             isMother = isMother,
-            adaSuggestion = suggestion.mensaje,
-            adaAction = suggestion.accion,
-            suggestionType = suggestion.tipo // Parámetro añadido para corregir el error
+            adaSuggestionRes = suggestion.mensajeRes,
+            adaActionRes = suggestion.accionRes,
+            adaSuggestionArgs = suggestion.mensajeArgs,
+            adaActionArgs = suggestion.accionArgs,
+            suggestionType = suggestion.tipo,
+            balanceScore = balanceScore,
+            horasSueno = totalSleepHours
         ) as DashboardState
-    }
-    .catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState.Loading)
+    }.catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState.Loading)
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun onAgendaDateSelected(date: LocalDate) { _selectedAgendaDate.value = date }
-    fun onAgendaViewModeChanged(mode: AgendaViewMode) { _agendaViewMode.value = mode }
+    fun onAgendaDateSelected(date: LocalDate) {
+        _selectedAgendaDate.value = date
+    }
+
+    fun onAgendaViewModeChanged(mode: AgendaViewMode) {
+        _agendaViewMode.value = mode
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun toggleTareaCompletada(tarea: Tarea) {
+        viewModelScope.launch {
+            marcarTareaCompletadaUseCase(tarea, !tarea.estaCompletada)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun deleteTarea(tarea: Tarea, cancelarFuturas: Boolean = false) {
+        viewModelScope.launch {
+            deleteTareaUseCase(tarea, cancelarFuturas)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addTarea(tarea: Tarea) {
+        viewModelScope.launch {
+            addTareaUseCase(tarea)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addNote(titulo: String, contenido: String, colorHex: String, tareaId: Int? = null) {
+        viewModelScope.launch {
+            addNoteUseCase(
+                Nota(
+                    titulo = titulo,
+                    contenido = contenido,
+                    colorEtiquetaHex = colorHex,
+                    fechaCreacion = LocalDateTime.now(),
+                    tareaId = tareaId
+                )
+            )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun updateNote(nota: Nota) {
+        viewModelScope.launch {
+            updateNoteUseCase(nota)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun deleteNote(nota: Nota) {
+        viewModelScope.launch {
+            deleteNoteUseCase(nota)
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun toggleRitual(ritual: Bienestar) {
         viewModelScope.launch {
-            val hoy = LocalDate.now()
-            val nuevoValor = if (ritual.valorActual >= ritual.metaObjetivo) 0f else ritual.metaObjetivo
-            addBienestarUseCase(ritual.copy(valorActual = nuevoValor, fecha = hoy.atTime(ritual.horaProgramada ?: LocalTime.now())))
+            toggleRitualUseCase(ritual)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun addRitualPersonalizado(nombre: String, hora: LocalTime?) {
         viewModelScope.launch {
-            addBienestarUseCase(Bienestar(
-                tipo = nombre, valorActual = 0f, metaObjetivo = 1f, unidad = "u",
-                iconoNombre = "star", fecha = LocalDateTime.now(), horaProgramada = hora
-            ))
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun addNote(titulo: String, contenido: String, colorHex: String) {
-        viewModelScope.launch { addNoteUseCase(Nota(titulo = titulo, contenido = contenido, colorEtiquetaHex = colorHex, fechaCreacion = LocalDateTime.now())) }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun addTarea(tarea: Tarea) { 
-        viewModelScope.launch { 
-            val generatedId = updateTaskUseCase(tarea)
-            val tareaWithId = tarea.copy(id = generatedId.toInt())
-            alarmScheduler.schedule(tareaWithId) 
-        } 
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun deleteTarea(tarea: Tarea) { 
-        viewModelScope.launch { 
-            deleteEntityUseCase.deleteTarea(tarea)
-            alarmScheduler.cancel(tarea)
+            addRitualUseCase(nombre, hora)
         }
     }
 }

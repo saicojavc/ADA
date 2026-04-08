@@ -1,7 +1,6 @@
 package com.saico.ada.dashboard.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +33,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.model.BottomAppBarItems
+import com.saico.ada.ui.R
 import com.saico.ada.ui.theme.TerracotaSuave
 import com.saico.ada.ui.theme.TextoGrisOscuro
 
@@ -69,25 +70,25 @@ fun NavigationBar(
                     isSelected = selectedBottomAppBarItem == BottomAppBarItems.HOME,
                     onClick = { onItemSelected(BottomAppBarItems.HOME) },
                     icon = Icons.Rounded.Home,
-                    label = "Inicio"
+                    label = stringResource(R.string.nav_home)
                 )
                 AdaNavItem(
                     isSelected = selectedBottomAppBarItem == BottomAppBarItems.AGENDA,
                     onClick = { onItemSelected(BottomAppBarItems.AGENDA) },
                     icon = Icons.Rounded.DateRange,
-                    label = "Agenda"
+                    label = stringResource(R.string.nav_agenda)
                 )
                 AdaNavItem(
                     isSelected = selectedBottomAppBarItem == BottomAppBarItems.WELLNES,
                     onClick = { onItemSelected(BottomAppBarItems.WELLNES) },
-                    icon = Icons.Rounded.Favorite, // Corregido: Icono de bienestar
-                    label = "Bienestar"
+                    icon = Icons.Rounded.Favorite,
+                    label = stringResource(R.string.nav_wellness)
                 )
                 AdaNavItem(
                     isSelected = selectedBottomAppBarItem == BottomAppBarItems.NOTES,
                     onClick = { onItemSelected(BottomAppBarItems.NOTES) },
-                    icon = Icons.Rounded.Description, // Corregido: Icono de notas
-                    label = "Notas"
+                    icon = Icons.Rounded.Description,
+                    label = stringResource(R.string.nav_notes)
                 )
             }
         }

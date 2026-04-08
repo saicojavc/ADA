@@ -18,6 +18,12 @@ class NotaRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getNotasByTareaId(taskId: Int): Flow<List<Nota>> {
+        return notaDao.getNotasByTareaId(taskId).map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
     override suspend fun insertNota(nota: Nota) {
         notaDao.insertNota(nota.toEntity())
     }

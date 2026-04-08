@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -16,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saico.ada.ui.components.AdaGravityBackground
 import com.saico.ada.ui.theme.*
+import com.saico.ada.ui.R
 
 @Composable
 fun OnboardingScreen(
@@ -47,7 +49,7 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Bienvenida a ADA",
+                text = stringResource(R.string.onboarding_welcome),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Bold
@@ -55,7 +57,7 @@ fun OnboardingScreen(
                 color = TextoGrisOscuro
             )
             Text(
-                text = "Tu LifeOS personal",
+                text = stringResource(R.string.onboarding_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextoGrisOscuro.copy(alpha = 0.6f)
             )
@@ -75,7 +77,7 @@ fun OnboardingScreen(
                     OutlinedTextField(
                         value = name,
                         onValueChange = viewModel::onNameChange,
-                        label = { Text("¿Cómo te llamas?") },
+                        label = { Text(stringResource(R.string.onboarding_name_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -90,7 +92,7 @@ fun OnboardingScreen(
                     OutlinedTextField(
                         value = occupation,
                         onValueChange = viewModel::onOccupationChange,
-                        label = { Text("¿A qué te dedicas?") },
+                        label = { Text(stringResource(R.string.onboarding_occupation_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -112,7 +114,7 @@ fun OnboardingScreen(
                             colors = CheckboxDefaults.colors(checkedColor = VerdeSalvia)
                         )
                         Text(
-                            text = "Soy madre",
+                            text = stringResource(R.string.onboarding_mother_label),
                             color = TextoGrisOscuro,
                             modifier = Modifier.padding(start = 8.dp)
                         )
@@ -132,7 +134,7 @@ fun OnboardingScreen(
                 enabled = name.isNotBlank()
             ) {
                 Text(
-                    text = "Comenzar mi viaje",
+                    text = stringResource(R.string.onboarding_button),
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
