@@ -72,10 +72,6 @@ A dedicated wellbeing space that tracks your **Balance Score** through:
 
 ---
 
-### 🕯 Organic Rituals
-Curated daily habits (*Sunlight Bath*, *Brain Dump*, *Evening Release*) with satisfying **long-press interactions** designed to reduce cognitive load and anxiety.
-
----
 
 ### 🏷 Smart Categorization
 A **predictive text algorithm** that suggests task categories from user input in real time. It normalizes text (removes accents, handles typos) and uses a **multi-category scoring system** — whichever category accumulates the most keyword matches wins.
