@@ -1235,7 +1235,16 @@ fun AddNotaDialog(
 ) {
     var titulo by remember { mutableStateOf(nota?.titulo ?: "") }
     var contenido by remember { mutableStateOf(nota?.contenido ?: "") }
-    var selectedTaskId by remember { mutableStateOf<Int?>(nota?.tareaId) }
+
+    // Usamos un identificador único para la UI del diálogo:
+    // Para tareas normales es el ID, para instancias repetitivas generamos un string único (ID + Hora)
+    var selectedTaskUIId by remember {
+        mutableStateOf<String?>(
+            nota?.tareaId?.let { id ->
+                tareasHoy.find { it.id == id || it.plantillaId == id }?.let { "${it.id}_${it.fechaHoraInicio}" }
+            }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1311,10 +1320,13 @@ fun AddNotaDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(tareasHoy) { tarea ->
-                                val isSelected = selectedTaskId == tarea.id
+                                val taskUIId = "${tarea.id}_${tarea.fechaHoraInicio}"
+                                val isSelected = selectedTaskUIId == taskUIId
                                 TareaChip(
-                                    tarea = tarea, isSelected = isSelected, onClick = {
-                                        selectedTaskId = if (isSelected) null else tarea.id
+                                    tarea = tarea,
+                                    isSelected = isSelected,
+                                    onClick = {
+                                        selectedTaskUIId = if (isSelected) null else taskUIId
                                     })
                             }
                         }
@@ -1325,9 +1337,15 @@ fun AddNotaDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (titulo.isNotBlank() && contenido.isNotBlank()) onConfirm(
-                        titulo, contenido, selectedTaskId
-                    )
+                    if (titulo.isNotBlank() && contenido.isNotBlank()) {
+                        // Al confirmar, extraemos el ID real de la tarea del ID de la UI
+                        val actualTaskId = selectedTaskUIId?.split("_")?.first()?.toIntOrNull()
+                        onConfirm(
+                            titulo,
+                            contenido,
+                            actualTaskId
+                        )
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
                 shape = RoundedCornerShape(16.dp)
