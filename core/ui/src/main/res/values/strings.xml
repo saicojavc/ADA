@@ -195,4 +195,10 @@
     <string name="task_notes_title">Task notes</string>
     <string name="task_notes_empty">No notes linked to this task.</string>
     <string name="action_view_notes">View notes (%1$d)</string>
+
+    <!-- Widget -->
+    <string name="widget_pending_tasks">%1$d pending</string>
+    <string name="widget_all_clear">Everything in calm</string>
+    <string name="widget_label">ADA — Today\'s Tasks</string>
+    <string name="widget_description">Shows your pending tasks for the day</string>
 </resources>

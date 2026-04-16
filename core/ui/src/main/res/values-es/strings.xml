@@ -69,7 +69,7 @@
     <string name="filter_tomorrow">Mañana</string>
     <string name="filter_all">Todas</string>
 
-    <!-- Bienestar -->
+    <!-- Wellness -->
     <string name="wellness_title">Tu Bienestar</string>
     <string name="wellness_balance">EQUILIBRIO</string>
     <string name="wellness_rituals">Tus Rituales</string>
@@ -195,4 +195,10 @@
     <string name="task_notes_title">Notas de la tarea</string>
     <string name="task_notes_empty">No hay notas vinculadas a esta tarea.</string>
     <string name="action_view_notes">Ver notas (%1$d)</string>
+
+    <!-- Widget -->
+    <string name="widget_pending_tasks">%1$d pendientes</string>
+    <string name="widget_all_clear">Todo en calma</string>
+    <string name="widget_label">ADA — Tareas de hoy</string>
+    <string name="widget_description">Muestra tus tareas pendientes del día</string>
 </resources>
