@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,6 +43,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +76,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.saico.ada.common.util.CategorySuggester
+import com.saico.ada.model.EventCategory
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.model.TipoRepeticion
@@ -95,13 +98,8 @@ import java.time.temporal.ChronoUnit
 import java.time.format.TextStyle as JavaTextStyle
 
 // ─────────────────────────────────────────────────────────────
-//  Utilidad de normalización
+//  Utilidad de normalización (Ya no es necesaria aquí, está en common)
 // ─────────────────────────────────────────────────────────────
-private fun String.normalize(): String {
-    return this.lowercase().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o')
-        .replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n').replace('à', 'a').replace('è', 'e')
-        .replace('ì', 'i').replace('ò', 'o').replace('ù', 'u')
-}
 
 @SuppressLint("LocalContextConfigurationRead")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -161,374 +159,22 @@ fun AddTareaDialog(
             list
         }
 
+    // Sugerencia automática de categoría desacoplada en core:common
     LaunchedEffect(titulo) {
-        val text = titulo.normalize()
-        if (text.isBlank()) return@LaunchedEffect
+        if (titulo.isBlank()) return@LaunchedEffect
 
-        // ── Diccionarios por categoría ───────────────────────────────
-
-        val palabrasMaternidad = listOf(
-            "bebe",
-            "bebe",
-            "nino",
-            "nina",
-            "hijo",
-            "hija",
-            "hijos",
-            "hijas",
-            "recien nacido",
-            "lactancia",
-            "leche materna",
-            "biberon",
-            "chupete",
-            "cuna",
-            "carrito",
-            "cochecito",
-            "pañal",
-            "panal",
-            "pediatra",
-            "guarderia",
-            "jardin infantil",
-            "colegio",
-            "escuela",
-            "tarea escolar",
-            "mochila",
-            "uniforme",
-            "cumpleanos nino",
-            "cumpleanos nina",
-            "fiesta infantil",
-            "embarazo",
-            "embarazada",
-            "ecografia",
-            "ultrasonido",
-            "obstetra",
-            "ginecologo",
-            "parto",
-            "preparto",
-            "posparto",
-            "cesarea",
-            "semana de gestacion",
-            "primer trimestre",
-            "nana",
-            "bua",
-            "berrinche",
-            "rabieta",
-            "siesta bebe",
-            "introduccion alimentaria",
-            "papilla",
-            "puré bebe",
-            "abuela cuida",
-            "abuela bebe",
-            "guarderia"
-        )
-
-        val palabrasTrabajo = listOf(
-            "reunion",
-            "junta",
-            "scrum",
-            "daily",
-            "standup",
-            "sprint",
-            "retrospectiva",
-            "planning",
-            "one on one",
-            "1 on 1",
-            "llamada de trabajo",
-            "videollamada trabajo",
-            "zoom work",
-            "meet work",
-            "teams",
-            "slack",
-            "cliente",
-            "proyecto",
-            "entregable",
-            "deadline",
-            "plazo",
-            "informe",
-            "reporte",
-            "presentacion trabajo",
-            "propuesta",
-            "cotizacion",
-            "factura",
-            "cobro",
-            "pago proveedor",
-            "contrato",
-            "firma contrato",
-            "revision codigo",
-            "deploy",
-            "lanzamiento",
-            "release",
-            "soporte",
-            "ticket",
-            "incidencia",
-            "trabajo",
-            "oficina",
-            "office",
-            "home office",
-            "remoto",
-            "jefe",
-            "jefa",
-            "gerente",
-            "director",
-            "ceo",
-            "rrhh",
-            "recursos humanos",
-            "entrevista trabajo",
-            "evaluacion",
-            "capacitacion",
-            "formacion laboral",
-            "curso trabajo",
-            "networking",
-            "conferencia",
-            "congreso",
-            "taller profesional",
-            "workshop",
-            "webinar",
-            "seminario"
-        )
-
-        val palabrasHogar = listOf(
-            "limpiar",
-            "limpeza",
-            "barrer",
-            "fregar",
-            "trapear",
-            "aspirar",
-            "ordenar",
-            "organizar casa",
-            "desinfectar",
-            "lavar ropa",
-            "tender ropa",
-            "planchar",
-            "doblar ropa",
-            "guardar ropa",
-            "cocinar",
-            "receta",
-            "preparar comida",
-            "hornear",
-            "amasar",
-            "descongelar",
-            "marinar",
-            "meal prep",
-            "compra",
-            "compras",
-            "supermercado",
-            "mercado",
-            "tienda",
-            "lista compras",
-            "mandado",
-            "verduleria",
-            "carniceria",
-            "ferreteria",
-            "farmacia hogar",
-            "reparar",
-            "arreglar",
-            "plomero",
-            "electricista",
-            "pintar casa",
-            "pared",
-            "goteras",
-            "fuga",
-            "instalar",
-            "montar mueble",
-            "ikea",
-            "perforacion",
-            "taladro",
-            "tornillo",
-            "casa",
-            "hogar",
-            "habitacion",
-            "cuarto",
-            "bano",
-            "cocina",
-            "jardin",
-            "patio",
-            "balcon",
-            "terraza",
-            "garage",
-            "perro",
-            "gato",
-            "mascota",
-            "veterinario",
-            "pasear perro",
-            "comida perro",
-            "comida gato",
-            "vacuna mascota"
-        )
-
-        val palabrasBienestar = listOf(
-            "yoga",
-            "gym",
-            "gimnasio",
-            "ejercicio",
-            "entrenamiento",
-            "crossfit",
-            "pilates",
-            "spinning",
-            "nadar",
-            "natacion",
-            "correr",
-            "running",
-            "caminar",
-            "senderismo",
-            "ciclismo",
-            "bicicleta",
-            "pesas",
-            "cardio",
-            "estiramientos",
-            "flexiones",
-            "abdominales",
-            "zumba",
-            "baile",
-            "kickboxing",
-            "boxeo",
-            "medico",
-            "doctor",
-            "cita medica",
-            "consulta",
-            "chequeo",
-            "analisis",
-            "sangre",
-            "presion arterial",
-            "vacuna",
-            "vacunacion",
-            "farmacia",
-            "medicamento",
-            "pastilla",
-            "tratamiento",
-            "terapia fisica",
-            "fisioterapia",
-            "quiropraxia",
-            "masaje",
-            "acupuntura",
-            "dentista",
-            "odontologo",
-            "oculista",
-            "optomentista",
-            "meditar",
-            "meditacion",
-            "mindfulness",
-            "respiracion",
-            "psicologo",
-            "psiquiatra",
-            "terapia",
-            "sesion terapia",
-            "diario emocional",
-            "journaling",
-            "gratitud",
-            "descanso",
-            "dormir",
-            "siesta",
-            "nap",
-            "descansar",
-            "relajar",
-            "relajacion",
-            "spa",
-            "bano relajante",
-            "dieta",
-            "nutricion",
-            "nutricionista",
-            "ayuno",
-            "comer sano",
-            "ensalada",
-            "proteina",
-            "suplemento",
-            "vitamina",
-            "hidratacion",
-            "agua",
-            "infusion",
-            "batido saludable",
-            "piel",
-            "skincare",
-            "crema",
-            "serum",
-            "rutina facial",
-            "mascarilla",
-            "protector solar",
-            "hidratante",
-            "peluqueria",
-            "corte pelo",
-            "manicura",
-            "pedicura",
-            "bienestar",
-            "autocuidado",
-            "autoestima",
-            "habito saludable",
-            "reto saludable",
-            "paso diario",
-            "pasos"
-        )
-
-        val palabrasPersonal = listOf(
-            "banco",
-            "transferencia",
-            "pago",
-            "factura personal",
-            "impuesto",
-            "declaracion",
-            "seguro",
-            "poliza",
-            "inversion",
-            "ahorro",
-            "presupuesto",
-            "tramite",
-            "cita gobierno",
-            "cita banco",
-            "renovar",
-            "pasaporte",
-            "dni",
-            "cedula",
-            "licencia conducir",
-            "registro",
-            "notaria",
-            "abogado",
-            "amigo",
-            "amiga",
-            "cena",
-            "comida con",
-            "cafe con",
-            "cumpleanos",
-            "aniversario",
-            "boda",
-            "evento",
-            "pelicula",
-            "concierto",
-            "teatro",
-            "exposicion",
-            "viaje",
-            "vuelo",
-            "hotel",
-            "reserva",
-            "leer",
-            "libro",
-            "curso",
-            "aprender",
-            "idioma",
-            "ingles",
-            "podcast",
-            "video tutorial"
-        )
-
-        val palabrasCompras =
-            listOf("compra", "supermercado", "super", "lista", "mercado", "tienda", "comprar")
-
-        data class CandidatoCategoria(val nombre: String, val palabras: List<String>)
-
-        val candidatos = buildList {
-            if (isMother) add(CandidatoCategoria(catMaternity, palabrasMaternidad))
-            add(CandidatoCategoria(catWork, palabrasTrabajo))
-            add(CandidatoCategoria(catHome, palabrasHogar))
-            add(CandidatoCategoria(catWellbeing, palabrasBienestar))
-            add(CandidatoCategoria(catPersonal, palabrasPersonal))
+        val suggestedEnum = CategorySuggester.suggestCategory(titulo, isMother)
+        val suggestedName = when (suggestedEnum) {
+            EventCategory.WORK -> catWork
+            EventCategory.HOME -> catHome
+            EventCategory.WELLNESS -> catWellbeing
+            EventCategory.MATERNITY -> catMaternity
+            EventCategory.PERSONAL -> catPersonal
+            EventCategory.UNCATEGORIZED -> categoriaSelected
         }
 
-        val ganador = candidatos.map { cat ->
-                val hits = cat.palabras.count { kw -> text.contains(kw.normalize()) }
-                cat to hits
-            }.filter { (_, hits) -> hits > 0 }.maxByOrNull { (_, hits) -> hits }
-
-        if (ganador != null) {
-            categoriaSelected = ganador.first.nombre
+        if (suggestedEnum != EventCategory.UNCATEGORIZED) {
+            categoriaSelected = suggestedName
         }
     }
 
@@ -546,9 +192,9 @@ fun AddTareaDialog(
         shape = RoundedCornerShape(28.dp),
         title = {
             Text(
-                if (tarea == null) stringResource(R.string.dialog_new_task) else stringResource(
-                    R.string.dialog_edit_task
-                ), color = TextoGrisOscuro, fontWeight = FontWeight.Bold
+                if (tarea == null) stringResource(R.string.dialog_new_task) else stringResource(R.string.dialog_edit_task),
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold
             )
         },
         text = {
@@ -774,13 +420,9 @@ fun AddTareaDialog(
                     if (titulo.isNotBlank()) {
                         val duracion =
                             ChronoUnit.MINUTES.between(selectedStartTime, selectedEndTime).toInt()
-
-                        val targetId = if (tarea?.plantillaId != null && tarea.plantillaId != 0) {
-                            tarea.plantillaId!!
-                        } else {
-                            tarea?.id ?: 0
-                        }
-
+                        val targetId =
+                            if (tarea?.plantillaId != null && tarea.plantillaId != 0) tarea.plantillaId!! else tarea?.id
+                                ?: 0
                         onConfirm(
                             Tarea(
                                 id = targetId,
@@ -1039,9 +681,7 @@ fun WheelColumn(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
     val snapBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     val selectedIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
-    
     LaunchedEffect(selectedIndex) { onValueChange(selectedIndex) }
-    
     Box(modifier = modifier.height(160.dp), contentAlignment = Alignment.Center) {
         Box(
             modifier = Modifier
@@ -1054,17 +694,16 @@ fun WheelColumn(
             flingBehavior = snapBehavior,
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(vertical = (160.dp - 45.dp) / 2) // Cálculo exacto para centrar el primer y último item
+            contentPadding = PaddingValues(vertical = (160.dp - 45.dp) / 2)
         ) {
             items(items.size) { index ->
-                Box(
-                    modifier = Modifier.height(45.dp), // Altura exacta por item
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.height(45.dp), contentAlignment = Alignment.Center) {
                     val isSelected = index == selectedIndex
                     Text(
                         text = items[index],
-                        style = if (isSelected) MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.bodyLarge,
+                        style = if (isSelected) MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ) else MaterialTheme.typography.bodyLarge,
                         color = if (isSelected) VerdeSalvia else TextoGrisOscuro.copy(alpha = 0.3f)
                     )
                 }
@@ -1153,42 +792,42 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
                     stringResource(R.string.dialog_ritual_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextoGrisOscuro.copy(alpha = 0.7f)
-                ); OutlinedTextField(
-                value = nombreRitual,
-                onValueChange = { nombreRitual = it },
-                label = { Text(stringResource(R.string.dialog_ritual_name_label)) },
-                placeholder = { Text("Ej: Yoga matutino") },
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = TextoGrisOscuro,
-                    unfocusedTextColor = TextoGrisOscuro,
-                    focusedLabelColor = VerdeSalvia,
-                    cursorColor = VerdeSalvia
-                ),
-                textStyle = TextStyle(color = TextoGrisOscuro, fontSize = 16.sp)
-            ); OutlinedCard(
-                onClick = { showTimePicker = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Rounded.AccessTime, null, tint = VerdeSalvia
-                    ); Spacer(modifier = Modifier.width(12.dp)); Text(
-                    text = if (selectedTime == null) stringResource(
-                        R.string.dialog_no_time
-                    ) else stringResource(
-                        R.string.dialog_scheduled_at,
-                        selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
-                    ), color = TextoGrisOscuro
                 )
+                OutlinedTextField(
+                    value = nombreRitual,
+                    onValueChange = { nombreRitual = it },
+                    label = { Text(stringResource(R.string.dialog_ritual_name_label)) },
+                    placeholder = { Text("Ej: Yoga matutino") },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextoGrisOscuro,
+                        unfocusedTextColor = TextoGrisOscuro,
+                        focusedLabelColor = VerdeSalvia,
+                        cursorColor = VerdeSalvia
+                    ),
+                    textStyle = TextStyle(color = TextoGrisOscuro, fontSize = 16.sp)
+                )
+                OutlinedCard(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Rounded.AccessTime, null, tint = VerdeSalvia)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = if (selectedTime == null) stringResource(R.string.dialog_no_time) else stringResource(
+                                R.string.dialog_scheduled_at,
+                                selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
+                            ), color = TextoGrisOscuro
+                        )
+                    }
                 }
-            }
             }
         },
         confirmButton = {
@@ -1225,17 +864,41 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddNotaDialog(
     nota: Nota? = null,
-    tareasHoy: List<Tarea> = emptyList(),
+    tareas: List<Tarea> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (String, String, Int?) -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
     var titulo by remember { mutableStateOf(nota?.titulo ?: "") }
     var contenido by remember { mutableStateOf(nota?.contenido ?: "") }
-    var selectedTaskId by remember { mutableStateOf<Int?>(nota?.tareaId) }
+    var selectedFilter by remember { mutableStateOf("TODAY") }
+
+    var selectedTaskUIId by remember {
+        mutableStateOf<String?>(
+            nota?.tareaId?.let { id ->
+                tareas.find { it.id == id || it.plantillaId == id }
+                    ?.let { "${it.id}_${it.fechaHoraInicio}" }
+            })
+    }
+
+    val filteredTareas = remember(selectedFilter, tareas) {
+        val today = LocalDate.now()
+        val tomorrow = today.plusDays(1)
+        when (selectedFilter) {
+            "TODAY" -> tareas.filter { it.fechaHoraInicio.toLocalDate() == today }
+                .sortedBy { it.fechaHoraInicio }
+
+            "TOMORROW" -> tareas.filter { it.fechaHoraInicio.toLocalDate() == tomorrow }
+                .sortedBy { it.fechaHoraInicio }
+
+            else -> tareas.sortedByDescending { it.fechaHoraInicio }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1248,9 +911,9 @@ fun AddNotaDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    if (nota == null) stringResource(R.string.dialog_new_note) else stringResource(R.string.dialog_edit_note),
-                    color = TextoGrisOscuro,
-                    fontWeight = FontWeight.Bold
+                    if (nota == null) stringResource(R.string.dialog_new_note) else stringResource(
+                        R.string.dialog_edit_note
+                    ), color = TextoGrisOscuro, fontWeight = FontWeight.Bold
                 )
                 if (onDelete != null) {
                     IconButton(onClick = onDelete) {
@@ -1281,7 +944,6 @@ fun AddNotaDialog(
                     ),
                     textStyle = TextStyle(color = TextoGrisOscuro)
                 )
-
                 OutlinedTextField(
                     value = contenido,
                     onValueChange = { contenido = it },
@@ -1297,24 +959,70 @@ fun AddNotaDialog(
                     textStyle = TextStyle(color = TextoGrisOscuro)
                 )
 
-                if (tareasHoy.isNotEmpty()) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.dialog_link_to_task),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = VerdeSalvia,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                Column {
+                    Text(
+                        text = stringResource(R.string.dialog_link_to_task),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = VerdeSalvia,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = selectedFilter == "TODAY",
+                            onClick = { selectedFilter = "TODAY" },
+                            label = { Text(stringResource(R.string.filter_today)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = VerdeSalvia.copy(
+                                    alpha = 0.2f
+                                ), selectedLabelColor = VerdeSalvia
+                            )
                         )
+                        FilterChip(
+                            selected = selectedFilter == "TOMORROW",
+                            onClick = { selectedFilter = "TOMORROW" },
+                            label = { Text(stringResource(R.string.filter_tomorrow)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = VerdeSalvia.copy(
+                                    alpha = 0.2f
+                                ), selectedLabelColor = VerdeSalvia
+                            )
+                        )
+                        FilterChip(
+                            selected = selectedFilter == "ALL",
+                            onClick = { selectedFilter = "ALL" },
+                            label = { Text(stringResource(R.string.filter_all)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = VerdeSalvia.copy(
+                                    alpha = 0.2f
+                                ), selectedLabelColor = VerdeSalvia
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (filteredTareas.isEmpty()) {
+                        Text(
+                            "No hay tareas en este periodo.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextoGrisOscuro.copy(alpha = 0.5f)
+                        )
+                    } else {
                         LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(tareasHoy) { tarea ->
-                                val isSelected = selectedTaskId == tarea.id
+                            items(filteredTareas) { tarea ->
+                                val taskUIId = "${tarea.id}_${tarea.fechaHoraInicio}"
+                                val isSelected = selectedTaskUIId == taskUIId
                                 TareaChip(
                                     tarea = tarea, isSelected = isSelected, onClick = {
-                                        selectedTaskId = if (isSelected) null else tarea.id
+                                        selectedTaskUIId = if (isSelected) null else taskUIId
                                     })
                             }
                         }
@@ -1325,9 +1033,12 @@ fun AddNotaDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (titulo.isNotBlank() && contenido.isNotBlank()) onConfirm(
-                        titulo, contenido, selectedTaskId
-                    )
+                    if (titulo.isNotBlank() && contenido.isNotBlank()) {
+                        val actualTaskId =
+                            selectedTaskUIId?.split("_")?.first()?.toIntOrNull(); onConfirm(
+                            titulo, contenido, actualTaskId
+                        )
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
                 shape = RoundedCornerShape(16.dp)
@@ -1348,20 +1059,22 @@ fun AddNotaDialog(
         })
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
     val color = tarea.colorHex.toComposeColor()
+    val dateFormatter = DateTimeFormatter.ofPattern("dd MMM")
     Surface(modifier = Modifier
         .clickable { onClick() }
-        .width(140.dp)
-        .height(50.dp),
+        .width(150.dp)
+        .height(60.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) color else color.copy(alpha = 0.1f),
         border = BorderStroke(1.dp, color.copy(alpha = 0.5f))) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Start
         ) {
             Icon(
                 imageVector = if (isSelected) Icons.Rounded.Check else Icons.Rounded.Assignment,
@@ -1370,14 +1083,23 @@ fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = tarea.titulo,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) Color.White else TextoGrisOscuro,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-            )
+            Column {
+                Text(
+                    text = tarea.titulo,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSelected) Color.White else TextoGrisOscuro,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = tarea.fechaHoraInicio.format(dateFormatter),
+                    style = TextStyle(fontSize = 9.sp),
+                    color = if (isSelected) Color.White.copy(alpha = 0.8f) else TextoGrisOscuro.copy(
+                        alpha = 0.5f
+                    )
+                )
+            }
         }
     }
 }

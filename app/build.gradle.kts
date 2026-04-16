@@ -48,9 +48,12 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":core:model"))
-    implementation(project(":core:notification")) // Añadida dependencia necesaria
+    implementation(project(":core:notification"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:onboarding"))
+
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)

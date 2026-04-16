@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ADA</string>
+    <string name="widget_description">Shows your pending tasks for the day</string>
+    <string name="widget_label">ADA — Today\'s Tasks</string>
 </resources>

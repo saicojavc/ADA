@@ -40,7 +40,7 @@ class GenerateTareaInstancesUseCase @Inject constructor() {
             val fechaHoraInicio = LocalDateTime.of(fecha, horaInicio)
             
             Tarea(
-                id = 0, // Instancia en memoria
+                id = plantilla.id, // IMPORTANTE: Usamos el ID de la plantilla para que el vínculo sea consistente
                 titulo = plantilla.titulo,
                 descripcion = plantilla.descripcion,
                 fechaHoraInicio = fechaHoraInicio,
@@ -49,7 +49,7 @@ class GenerateTareaInstancesUseCase @Inject constructor() {
                 colorHex = plantilla.colorHex,
                 estaCompletada = excepcion?.estaCompletada ?: false,
                 esPrioridadIA = plantilla.esPrioridadIA,
-                esPlantilla = true, // Marcamos como true para que el diálogo de edición active el switch de repetición
+                esPlantilla = true,
                 plantillaId = plantilla.id,
                 tipoRepeticion = plantilla.tipoRepeticion,
                 diasRepeticion = plantilla.diasRepeticion,

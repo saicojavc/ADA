@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.saico.ada.domain.alarm.AlarmScheduler
 import com.saico.ada.model.Tarea
@@ -25,6 +24,10 @@ class AndroidAlarmScheduler @Inject constructor(
 
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
 
+    companion object {
+        private const val REMINDER_MINUTES = 30L
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun schedule(tarea: Tarea) {
         if (tarea.esPlantilla) {
@@ -39,10 +42,12 @@ class AndroidAlarmScheduler @Inject constructor(
         val timeExact = tarea.fechaHoraInicio.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (timeExact < System.currentTimeMillis()) return
 
+        // Alarma Exacta
         val intent = createBaseIntent(tarea, "ACTION_TASK_EXACT_${tarea.id}")
         scheduleExact(timeExact, tarea.id * 10, intent)
 
-        val timeEarly = tarea.fechaHoraInicio.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // Recordatorio previo (30 min antes)
+        val timeEarly = tarea.fechaHoraInicio.minusMinutes(REMINDER_MINUTES).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (timeEarly > System.currentTimeMillis()) {
             val earlyIntent = createBaseIntent(tarea, "ACTION_TASK_EARLY_${tarea.id}").apply {
                 putExtra("EXTRA_IS_EARLY", true)
@@ -64,7 +69,7 @@ class AndroidAlarmScheduler @Inject constructor(
         val intent = createBaseIntent(tarea, "ACTION_REP_EXACT_${tarea.id}")
         scheduleExact(triggerTime, tarea.id * 10, intent)
 
-        val earlyTrigger = nextOccurrence.minusMinutes(30).toInstant().toEpochMilli()
+        val earlyTrigger = nextOccurrence.minusMinutes(REMINDER_MINUTES).toInstant().toEpochMilli()
         if (earlyTrigger > System.currentTimeMillis()) {
             val earlyIntent = createBaseIntent(tarea, "ACTION_REP_EARLY_${tarea.id}").apply {
                 putExtra("EXTRA_IS_EARLY", true)
@@ -111,8 +116,6 @@ class AndroidAlarmScheduler @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getNextOccurrenceOfSpecificDays(days: List<DayOfWeek>, time: LocalTime): ZonedDateTime {
         var checkDate = LocalDate.now()
-        var found = false
-        // Buscar el próximo día válido en los próximos 7 días
         for (i in 0..7) {
             if (checkDate.dayOfWeek in days) {
                 val zdt = LocalDateTime.of(checkDate, time).atZone(ZoneId.systemDefault())

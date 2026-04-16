@@ -5,5 +5,6 @@ enum class EventCategory {
     HOME,
     WELLNESS,
     MATERNITY,
+    PERSONAL,
     UNCATEGORIZED
 }
