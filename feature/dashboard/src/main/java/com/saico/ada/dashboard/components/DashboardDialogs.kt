@@ -193,7 +193,8 @@ fun AddTareaDialog(
         title = {
             Text(
                 if (tarea == null) stringResource(R.string.dialog_new_task) else stringResource(R.string.dialog_edit_task),
-                color = TextoGrisOscuro, fontWeight = FontWeight.Bold
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold
             )
         },
         text = {
@@ -288,7 +289,8 @@ fun AddTareaDialog(
                             color = TextoGrisOscuro
                         )
                         Switch(
-                            checked = esRepetible, onCheckedChange = { esRepetible = it },
+                            checked = esRepetible,
+                            onCheckedChange = { esRepetible = it },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = VerdeSalvia,
                                 checkedTrackColor = VerdeSalvia.copy(alpha = 0.3f),
@@ -314,9 +316,7 @@ fun AddTareaDialog(
                                     })
                                 CategoryChip(
                                     item = CategoryItem(
-                                        "Días específicos",
-                                        VerdeSalvia,
-                                        ""
+                                        "Días específicos", VerdeSalvia, ""
                                     ),
                                     isSelected = tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS,
                                     onClick = {
@@ -354,8 +354,7 @@ fun AddTareaDialog(
                                             Box(contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = day.getDisplayName(
-                                                        JavaTextStyle.NARROW,
-                                                        locale
+                                                        JavaTextStyle.NARROW, locale
                                                     ),
                                                     color = if (isSelected) Color.White else TextoGrisOscuro,
                                                     fontWeight = FontWeight.Bold,
@@ -416,9 +415,7 @@ fun AddTareaDialog(
                 onClick = {
                     val selectedCat =
                         baseCategorias.find { it.name == categoriaSelected } ?: CategoryItem(
-                            categoriaSelected,
-                            VerdeSalvia,
-                            "#81B29A"
+                            categoriaSelected, VerdeSalvia, "#81B29A"
                         )
                     if (titulo.isNotBlank()) {
                         val duracion =
@@ -433,11 +430,9 @@ fun AddTareaDialog(
                                 descripcion = tarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
                                 fechaHoraFin = if (esRepetible) LocalDateTime.of(
-                                    selectedDate,
-                                    selectedStartTime
+                                    selectedDate, selectedStartTime
                                 ).plusMinutes(duracion.toLong()) else LocalDateTime.of(
-                                    selectedDate,
-                                    selectedEndTime
+                                    selectedDate, selectedEndTime
                                 ),
                                 categoria = selectedCat.name,
                                 colorHex = selectedCat.hex,
@@ -467,12 +462,10 @@ fun AddTareaDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    color = TerracotaSuave
+                    stringResource(R.string.action_cancel), color = TerracotaSuave
                 )
             }
-        }
-    )
+        })
 
     if (showDatePicker) {
         AdaDatePickerWheelDialog(
@@ -512,9 +505,7 @@ fun AddTareaDialog(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AdaDatePickerWheelDialog(
-    initialDate: LocalDate,
-    onDismiss: () -> Unit,
-    onConfirm: (LocalDate) -> Unit
+    initialDate: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate) -> Unit
 ) {
     var selectedDay by remember { mutableIntStateOf(initialDate.dayOfMonth) }
     var selectedMonth by remember { mutableIntStateOf(initialDate.monthValue) }
@@ -536,9 +527,7 @@ fun AdaDatePickerWheelDialog(
     val years = (2024..2030).map { it.toString() }
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = BaseCrema,
-            modifier = Modifier.padding(24.dp)
+            shape = RoundedCornerShape(28.dp), color = BaseCrema, modifier = Modifier.padding(24.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -581,8 +570,7 @@ fun AdaDatePickerWheelDialog(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
                         Text(
-                            stringResource(R.string.action_cancel),
-                            color = TerracotaSuave
+                            stringResource(R.string.action_cancel), color = TerracotaSuave
                         )
                     }
                     TextButton(onClick = {
@@ -590,9 +578,7 @@ fun AdaDatePickerWheelDialog(
                             val finalDate = LocalDate.of(selectedYear, selectedMonth, 1);
                             val maxDay = finalDate.lengthOfMonth(); onConfirm(
                                 LocalDate.of(
-                                    selectedYear,
-                                    selectedMonth,
-                                    selectedDay.coerceIn(1, maxDay)
+                                    selectedYear, selectedMonth, selectedDay.coerceIn(1, maxDay)
                                 )
                             )
                         } catch (e: Exception) {
@@ -614,21 +600,15 @@ fun AdaDatePickerWheelDialog(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AdaTimeWheelPickerDialog(
-    title: String,
-    initialTime: LocalTime,
-    onDismiss: () -> Unit,
-    onConfirm: (LocalTime) -> Unit
+    title: String, initialTime: LocalTime, onDismiss: () -> Unit, onConfirm: (LocalTime) -> Unit
 ) {
     var selectedHour by remember { mutableIntStateOf(initialTime.hour) }
     var selectedMinute by remember { mutableIntStateOf(initialTime.minute) }
     Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = BaseCrema,
-            modifier = Modifier.padding(24.dp)
+            shape = RoundedCornerShape(28.dp), color = BaseCrema, modifier = Modifier.padding(24.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -655,9 +635,7 @@ fun AdaTimeWheelPickerDialog(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        ":",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = TextoGrisOscuro
+                        ":", style = MaterialTheme.typography.headlineLarge, color = TextoGrisOscuro
                     )
                     WheelColumn(
                         items = (0..59).map { it.toString().padStart(2, '0') },
@@ -670,15 +648,13 @@ fun AdaTimeWheelPickerDialog(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
                         Text(
-                            stringResource(R.string.action_cancel),
-                            color = TerracotaSuave
+                            stringResource(R.string.action_cancel), color = TerracotaSuave
                         )
                     }
                     TextButton(onClick = {
                         onConfirm(
                             LocalTime.of(
-                                selectedHour,
-                                selectedMinute
+                                selectedHour, selectedMinute
                             )
                         )
                     }) {
@@ -771,18 +747,15 @@ fun TimeSelectionCard(label: String, time: LocalTime, modifier: Modifier, onClic
 
 @Composable
 fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .clickable { onClick() }
-            .height(40.dp)
-            .padding(horizontal = 4.dp),
+    Surface(modifier = Modifier
+        .clickable { onClick() }
+        .height(40.dp)
+        .padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) item.color else item.color.copy(alpha = 0.15f),
         border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
-            1.dp,
-            item.color.copy(alpha = 0.3f)
-        )
-    ) {
+            1.dp, item.color.copy(alpha = 0.3f)
+        )) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
                 text = item.name,
@@ -861,8 +834,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
             Button(
                 onClick = {
                     if (nombreRitual.isNotBlank()) onConfirm(
-                        nombreRitual,
-                        selectedTime
+                        nombreRitual, selectedTime
                     )
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
@@ -879,8 +851,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    color = TerracotaSuave
+                    stringResource(R.string.action_cancel), color = TerracotaSuave
                 )
             }
         })
@@ -912,8 +883,7 @@ fun AddNotaDialog(
             nota?.tareaId?.let { id ->
                 tareas.find { it.id == id || it.plantillaId == id }
                     ?.let { "${it.id}_${it.fechaHoraInicio}" }
-            }
-        )
+            })
     }
 
     val filteredTareas = remember(selectedFilter, tareas) {
@@ -1051,9 +1021,7 @@ fun AddNotaDialog(
                                 val taskUIId = "${tarea.id}_${tarea.fechaHoraInicio}"
                                 val isSelected = selectedTaskUIId == taskUIId
                                 TareaChip(
-                                    tarea = tarea,
-                                    isSelected = isSelected,
-                                    onClick = {
+                                    tarea = tarea, isSelected = isSelected, onClick = {
                                         selectedTaskUIId = if (isSelected) null else taskUIId
                                     })
                             }
@@ -1068,9 +1036,7 @@ fun AddNotaDialog(
                     if (titulo.isNotBlank() && contenido.isNotBlank()) {
                         val actualTaskId =
                             selectedTaskUIId?.split("_")?.first()?.toIntOrNull(); onConfirm(
-                            titulo,
-                            contenido,
-                            actualTaskId
+                            titulo, contenido, actualTaskId
                         )
                     }
                 },
@@ -1087,8 +1053,7 @@ fun AddNotaDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    color = TerracotaSuave
+                    stringResource(R.string.action_cancel), color = TerracotaSuave
                 )
             }
         })
@@ -1099,15 +1064,13 @@ fun AddNotaDialog(
 fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
     val color = tarea.colorHex.toComposeColor()
     val dateFormatter = DateTimeFormatter.ofPattern("dd MMM")
-    Surface(
-        modifier = Modifier
-            .clickable { onClick() }
-            .width(150.dp)
-            .height(60.dp),
+    Surface(modifier = Modifier
+        .clickable { onClick() }
+        .width(150.dp)
+        .height(60.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) color else color.copy(alpha = 0.1f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
+        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
