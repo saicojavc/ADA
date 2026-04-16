@@ -92,6 +92,8 @@ fun Context(
                             agendaViewMode = agendaViewMode,
                             onDateSelected = viewModel::onAgendaDateSelected,
                             onViewModeChanged = viewModel::onAgendaViewModeChanged,
+                            uiState = uiState,
+                            viewModel = viewModel
                         )
 
                         BottomAppBarItems.WELLNES -> WellnessScreen(uiState, viewModel)
@@ -157,7 +159,7 @@ fun Context(
 
         if (showAddNotaDialog) {
             AddNotaDialog(
-                tareasHoy = successState?.tareasHoy ?: emptyList(),
+                tareas = successState?.todasLasTareas ?: emptyList(),
                 onDismiss = { showAddNotaDialog = false },
                 onConfirm = { titulo, contenido, tareaId ->
                     viewModel.addNote(titulo, contenido, "#F2CC8F", tareaId)

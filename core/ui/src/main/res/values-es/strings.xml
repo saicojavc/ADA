@@ -62,8 +62,12 @@
     <string name="dialog_select_time">Selecciona la hora</string>
     <string name="dialog_select_hour">Selecciona la hora</string>
     <string name="dialog_unbalanced">DESEQUILIBRADO</string>
-    <string name="dialog_link_to_task">Vincular a una tarea de hoy</string>
+    <string name="dialog_link_to_task">Vincular a una tarea</string>
+    <string name="dialog_search_task_placeholder">Buscar tarea...</string>
     <string name="content_desc_delete_note">Borrar nota</string>
+    <string name="filter_today">Hoy</string>
+    <string name="filter_tomorrow">Mañana</string>
+    <string name="filter_all">Todas</string>
 
     <!-- Bienestar -->
     <string name="wellness_title">Tu Bienestar</string>

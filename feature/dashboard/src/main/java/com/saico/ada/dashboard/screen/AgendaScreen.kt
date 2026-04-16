@@ -2,7 +2,10 @@ package com.saico.ada.dashboard.screen
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,9 +13,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -26,7 +31,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.AgendaViewMode
+import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.components.*
+import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
 import com.saico.ada.ui.theme.*
@@ -41,17 +49,21 @@ import androidx.compose.ui.platform.LocalConfiguration
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AgendaScreen(
-    todasLasTareas: List<Tarea>,      // Lista para los puntos del calendario (mes completo)
-    tareasDelDia: List<Tarea>,        // Lista ya calculada para el día seleccionado (normales + repetibles)
+    todasLasTareas: List<Tarea>,
+    tareasDelDia: List<Tarea>,
     selectedDate: LocalDate,
     agendaViewMode: AgendaViewMode,
     onDateSelected: (LocalDate) -> Unit,
-    onViewModeChanged: (AgendaViewMode) -> Unit
+    onViewModeChanged: (AgendaViewMode) -> Unit,
+    uiState: DashboardState,
+    viewModel: DashboardViewModel? = null // Permite llamar a acciones del VM
 ) {
-    // Ya no filtramos aquí, usamos lo que el ViewModel ya preparó con la lógica de expansión
     val itemsAgenda = tareasDelDia.sortedBy { it.fechaHoraInicio.toLocalTime() }
-    
     val now = LocalDateTime.now()
+    val successState = uiState as? DashboardState.Success
+    
+    var tareaVerNotas by remember { mutableStateOf<Pair<Tarea, List<Nota>>?>(null) }
+    var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -75,9 +87,38 @@ fun AgendaScreen(
             item { EmptyDayState(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) }
         } else {
             items(itemsAgenda) { tarea ->
-                TareaAgendaCard(tarea = tarea, now = now, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+                val notasVinculadas = successState?.notas?.filter { it.tareaId == tarea.id || (tarea.plantillaId != null && it.tareaId == tarea.plantillaId) } ?: emptyList()
+                TareaAgendaCard(
+                    tarea = tarea, 
+                    notasCount = notasVinculadas.size,
+                    now = now, 
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                    onVerNotas = { tareaVerNotas = tarea to notasVinculadas },
+                    onEdit = { tareaToEdit = it },
+                    onToggleCompletada = { viewModel?.toggleTareaCompletada(it) }
+                )
             }
         }
+    }
+
+    if (tareaVerNotas != null) {
+        NotasVinculadasDialog(
+            tarea = tareaVerNotas!!.first,
+            notas = tareaVerNotas!!.second,
+            onDismiss = { tareaVerNotas = null }
+        )
+    }
+
+    if (tareaToEdit != null) {
+        AddTareaDialog(
+            tarea = tareaToEdit,
+            isMother = successState?.isMother ?: false,
+            onDismiss = { tareaToEdit = null },
+            onConfirm = { editedTarea ->
+                viewModel?.addTarea(editedTarea)
+                tareaToEdit = null
+            }
+        )
     }
 }
 
@@ -108,17 +149,30 @@ fun AgendaDayHeader(date: LocalDate, taskCount: Int, modifier: Modifier = Modifi
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TareaAgendaCard(tarea: Tarea, now: LocalDateTime, modifier: Modifier = Modifier) {
+fun TareaAgendaCard(
+    tarea: Tarea, 
+    notasCount: Int,
+    now: LocalDateTime, 
+    modifier: Modifier = Modifier,
+    onVerNotas: () -> Unit,
+    onEdit: (Tarea) -> Unit,
+    onToggleCompletada: (Tarea) -> Unit
+) {
     val color = tarea.colorHex.toComposeColor()
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    
-    // Una tarea es "pasada" si es hoy y ya pasó la hora, o si es un día anterior
     val isPast = tarea.fechaHoraInicio.isBefore(now)
 
     Card(
-        modifier = modifier.fillMaxWidth().alpha(if (isPast || tarea.estaCompletada) 0.6f else 1f), 
+        modifier = modifier
+            .fillMaxWidth()
+            .alpha(if (isPast || tarea.estaCompletada) 0.6f else 1f)
+            .combinedClickable(
+                onClick = { onToggleCompletada(tarea) },
+                onLongClick = { onEdit(tarea) }
+            ),
         shape = RoundedCornerShape(20.dp), 
         colors = CardDefaults.cardColors(containerColor = Color.White), 
         elevation = CardDefaults.cardElevation(defaultElevation = if (isPast || tarea.estaCompletada) 0.dp else 1.dp)
@@ -144,6 +198,21 @@ fun TareaAgendaCard(tarea: Tarea, now: LocalDateTime, modifier: Modifier = Modif
                         color = TextoGrisOscuro.copy(alpha = 0.6f),
                         textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None
                     )
+                    
+                    if (notasCount > 0) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = VerdeSalvia.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.clickable { onVerNotas() }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                Icon(imageVector = Icons.Rounded.Description, contentDescription = null, tint = VerdeSalvia, modifier = Modifier.size(12.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "$notasCount", style = MaterialTheme.typography.labelSmall, color = VerdeSalvia, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
             Surface(color = color.copy(alpha = 0.1f), shape = CircleShape) {

@@ -61,8 +61,12 @@
     <string name="dialog_select_time">Select time</string>
     <string name="dialog_select_hour">Select the hour</string>
     <string name="dialog_unbalanced">UNBALANCED</string>
-    <string name="dialog_link_to_task">Link to a task for today</string>
+    <string name="dialog_link_to_task">Link to a task</string>
+    <string name="dialog_search_task_placeholder">Search task...</string>
     <string name="content_desc_delete_note">Delete note</string>
+    <string name="filter_today">Today</string>
+    <string name="filter_tomorrow">Tomorrow</string>
+    <string name="filter_all">All</string>
 
     <!-- Wellness -->
     <string name="wellness_title">Your Wellbeing</string>

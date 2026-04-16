@@ -107,7 +107,7 @@ fun NotesScreen(
     if (notaToEdit != null) {
         AddNotaDialog(
             nota = notaToEdit,
-            tareasHoy = successState?.tareasHoy ?: emptyList(),
+            tareas = successState?.todasLasTareas ?: emptyList(),
             onDismiss = { notaToEdit = null },
             onConfirm = { titulo, contenido, tareaId ->
                 viewModel.updateNote(
