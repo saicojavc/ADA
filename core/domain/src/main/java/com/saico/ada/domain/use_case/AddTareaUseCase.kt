@@ -8,7 +8,8 @@ import javax.inject.Inject
 
 class AddTareaUseCase @Inject constructor(
     private val updateTaskUseCase: UpdateTaskUseCase,
-    private val alarmScheduler: AlarmScheduler
+    private val alarmScheduler: AlarmScheduler,
+    private val scheduleRecurringAlarmsUseCase: ScheduleRecurringAlarmsUseCase
 ) {
     @RequiresApi(Build.VERSION_CODES.O)
     suspend operator fun invoke(tarea: Tarea) {
@@ -21,5 +22,9 @@ class AddTareaUseCase @Inject constructor(
         val finalTask = taskToSave.copy(id = generatedId.toInt())
         alarmScheduler.cancel(finalTask)
         alarmScheduler.schedule(finalTask)
+
+        if (finalTask.esPlantilla) {
+            scheduleRecurringAlarmsUseCase(finalTask)
+        }
     }
 }
