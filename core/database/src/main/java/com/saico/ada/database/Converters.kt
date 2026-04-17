@@ -80,4 +80,21 @@ class Converters {
             else it.split(",").map { name -> DayOfWeek.valueOf(name) }
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @TypeConverter
+    fun fromLocalDateTimeList(dates: List<LocalDateTime>?): String? {
+        return dates?.joinToString(",") { it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli().toString() }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @TypeConverter
+    fun toLocalDateTimeList(value: String?): List<LocalDateTime>? {
+        return value?.let {
+            if (it.isEmpty()) emptyList()
+            else it.split(",").map { millis -> 
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(millis.toLong()), ZoneId.systemDefault())
+            }
+        }
+    }
 }

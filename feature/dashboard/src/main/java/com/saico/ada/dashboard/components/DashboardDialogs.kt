@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -131,7 +132,6 @@ fun AddTareaDialog(
         mutableStateOf(tarea?.fechaHoraFin?.toLocalTime() ?: LocalTime.now().plusHours(1))
     }
 
-    // Estados para repetición
     var esRepetible by remember(tarea) { mutableStateOf(tarea?.esPlantilla ?: false) }
     var tipoRepeticionSelected by remember(tarea) {
         mutableStateOf(
@@ -144,11 +144,19 @@ fun AddTareaDialog(
     }
     var fechaFinRepeticion by remember(tarea) { mutableStateOf(tarea?.fechaFinRepeticion) }
 
+    // Lista de alarmas personalizadas
+    var alarmasPersonalizadas by remember(tarea) {
+        mutableStateOf(
+            tarea?.alarmasPersonalizadas ?: emptyList()
+        )
+    }
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showEndRepeatDatePicker by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showAddAlarmDialog by remember { mutableStateOf(false) }
 
     val allCategories = remember(
         isMother,
@@ -303,6 +311,84 @@ fun AddTareaDialog(
                         time = selectedEndTime,
                         modifier = Modifier.weight(1f),
                         onClick = { showEndTimePicker = true })
+                }
+
+                // Sección de Alarmas Personalizadas
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.extra_alarms),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = VerdeSalvia,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { showAddAlarmDialog = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(Icons.Rounded.Add, null, tint = VerdeSalvia)
+                        }
+                    }
+
+                    if (alarmasPersonalizadas.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.no_alarms),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextoGrisOscuro.copy(alpha = 0.4f),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            alarmasPersonalizadas.forEach { alarm ->
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = VerdeSalvia.copy(alpha = 0.05f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(
+                                            horizontal = 12.dp,
+                                            vertical = 6.dp
+                                        ),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.NotificationsActive,
+                                            null,
+                                            tint = VerdeSalvia,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = alarm.format(
+                                                DateTimeFormatter.ofPattern(
+                                                    "dd MMM, HH:mm",
+                                                    locale
+                                                )
+                                            ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = TextoGrisOscuro,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        IconButton(onClick = {
+                                            alarmasPersonalizadas = alarmasPersonalizadas - alarm
+                                        }, modifier = Modifier.size(20.dp)) {
+                                            Icon(
+                                                Icons.Rounded.Delete,
+                                                null,
+                                                tint = TerracotaSuave,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Column {
@@ -500,7 +586,8 @@ fun AddTareaDialog(
                                 duracionMinutos = if (duracion > 0) duracion else 60,
                                 fechaInicioRepeticion = selectedDate,
                                 fechaFinRepeticion = if (esRepetible) (fechaFinRepeticion
-                                    ?: selectedDate.plusYears(1)) else null
+                                    ?: selectedDate.plusYears(1)) else null,
+                                alarmasPersonalizadas = alarmasPersonalizadas
                             )
                         )
                     }
@@ -528,6 +615,17 @@ fun AddTareaDialog(
                 onAddCustomCategory(nombre, colorHex)
                 categoriaSelected = nombre
                 showAddCategoryDialog = false
+            }
+        )
+    }
+
+    if (showAddAlarmDialog) {
+        AddCustomAlarmDialog(
+            baseDate = selectedDate,
+            onDismiss = { showAddAlarmDialog = false },
+            onConfirm = { newAlarm ->
+                alarmasPersonalizadas = (alarmasPersonalizadas + newAlarm).sorted()
+                showAddAlarmDialog = false
             }
         )
     }
@@ -566,6 +664,117 @@ fun AddTareaDialog(
                 }
                 showEndRepeatDatePicker = false
             })
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun AddCustomAlarmDialog(
+    baseDate: LocalDate,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalDateTime) -> Unit
+) {
+    var selectedDate by remember { mutableStateOf(baseDate) }
+    var selectedTime by remember { mutableStateOf(LocalTime.of(9, 0)) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val locale = LocalConfiguration.current.locales[0]
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BaseCrema,
+        shape = RoundedCornerShape(28.dp),
+        title = {
+            Text(
+                "Nuevo Recordatorio",
+                color = TextoGrisOscuro,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedCard(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.CalendarMonth,
+                            null,
+                            tint = VerdeSalvia,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = selectedDate.format(
+                                DateTimeFormatter.ofPattern(
+                                    "EEEE, d MMM",
+                                    locale
+                                )
+                            ), color = TextoGrisOscuro
+                        )
+                    }
+                }
+
+                OutlinedCard(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.AccessTime,
+                            null,
+                            tint = VerdeSalvia,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                            color = TextoGrisOscuro
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(LocalDateTime.of(selectedDate, selectedTime)) },
+                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia)
+            ) {
+                Text("Agregar", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = TerracotaSuave)
+            }
+        }
+    )
+
+    if (showDatePicker) {
+        AdaDatePickerWheelDialog(
+            initialDate = selectedDate,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { selectedDate = it; showDatePicker = false }
+        )
+    }
+    if (showTimePicker) {
+        AdaTimeWheelPickerDialog(
+            title = "Seleccionar hora",
+            initialTime = selectedTime,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { selectedTime = it; showTimePicker = false }
+        )
     }
 }
 

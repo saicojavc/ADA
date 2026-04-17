@@ -26,7 +26,8 @@ object DatabaseModule {
                 AdaDatabase.MIGRATION_3_4,
                 AdaDatabase.MIGRATION_4_5,
                 AdaDatabase.MIGRATION_5_6,
-                AdaDatabase.MIGRATION_6_7
+                AdaDatabase.MIGRATION_6_7,
+                AdaDatabase.MIGRATION_7_8
             )
             .build()
     }

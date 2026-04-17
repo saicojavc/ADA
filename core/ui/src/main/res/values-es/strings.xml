@@ -209,4 +209,7 @@
     <string name="repeat_to">Repetir hasta</string>
     <string name="all_days">Todos los días</string>
     <string name="monthly">Mensual</string>
+
+    <string name="extra_alarms">Recordatorios adicionales</string>
+    <string name="no_alarms">Sin recordatorios adicionales</string>
 </resources>

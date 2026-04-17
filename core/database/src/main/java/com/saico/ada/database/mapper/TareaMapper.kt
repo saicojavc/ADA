@@ -19,7 +19,8 @@ fun TareaEntity.toDomain() = Tarea(
     horaInicio = horaInicio,
     duracionMinutos = duracionMinutos,
     fechaInicioRepeticion = fechaInicioRepeticion,
-    fechaFinRepeticion = fechaFinRepeticion
+    fechaFinRepeticion = fechaFinRepeticion,
+    alarmasPersonalizadas = alarmasPersonalizadas
 )
 
 fun Tarea.toEntity() = TareaEntity(
@@ -38,5 +39,6 @@ fun Tarea.toEntity() = TareaEntity(
     horaInicio = horaInicio,
     duracionMinutos = duracionMinutos,
     fechaInicioRepeticion = fechaInicioRepeticion,
-    fechaFinRepeticion = fechaFinRepeticion
+    fechaFinRepeticion = fechaFinRepeticion,
+    alarmasPersonalizadas = alarmasPersonalizadas
 )

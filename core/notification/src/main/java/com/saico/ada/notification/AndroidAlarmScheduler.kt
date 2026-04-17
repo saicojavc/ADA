@@ -26,33 +26,46 @@ class AndroidAlarmScheduler @Inject constructor(
 
     companion object {
         private const val REMINDER_MINUTES = 30L
+        private const val OFFSET_EXACT = 0
+        private const val OFFSET_EARLY = 1
+        private const val OFFSET_CUSTOM = 100 // Alarms starting from 100
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun schedule(tarea: Tarea) {
+        // Cancelar previas para evitar duplicados si se edita
+        cancel(tarea)
+
         if (tarea.esPlantilla) {
             scheduleNextRepeatingOccurrence(tarea)
         } else {
             scheduleSingleAlarm(tarea)
+        }
+
+        // Programar alarmas personalizadas
+        tarea.alarmasPersonalizadas.forEachIndexed { index, dateTime ->
+            val triggerTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            if (triggerTime > System.currentTimeMillis()) {
+                val intent = createBaseIntent(tarea, "ACTION_TASK_CUSTOM_${tarea.id}_$index")
+                scheduleExact(triggerTime, (tarea.id * 1000) + OFFSET_CUSTOM + index, intent)
+            }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun scheduleSingleAlarm(tarea: Tarea) {
         val timeExact = tarea.fechaHoraInicio.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        if (timeExact < System.currentTimeMillis()) return
+        if (timeExact > System.currentTimeMillis()) {
+            val intent = createBaseIntent(tarea, "ACTION_TASK_EXACT_${tarea.id}")
+            scheduleExact(timeExact, (tarea.id * 1000) + OFFSET_EXACT, intent)
+        }
 
-        // Alarma Exacta
-        val intent = createBaseIntent(tarea, "ACTION_TASK_EXACT_${tarea.id}")
-        scheduleExact(timeExact, tarea.id * 10, intent)
-
-        // Recordatorio previo (30 min antes)
         val timeEarly = tarea.fechaHoraInicio.minusMinutes(REMINDER_MINUTES).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (timeEarly > System.currentTimeMillis()) {
             val earlyIntent = createBaseIntent(tarea, "ACTION_TASK_EARLY_${tarea.id}").apply {
                 putExtra("EXTRA_IS_EARLY", true)
             }
-            scheduleExact(timeEarly, (tarea.id * 10) + 1, earlyIntent)
+            scheduleExact(timeEarly, (tarea.id * 1000) + OFFSET_EARLY, earlyIntent)
         }
     }
 
@@ -67,14 +80,14 @@ class AndroidAlarmScheduler @Inject constructor(
 
         val triggerTime = nextOccurrence.toInstant().toEpochMilli()
         val intent = createBaseIntent(tarea, "ACTION_REP_EXACT_${tarea.id}")
-        scheduleExact(triggerTime, tarea.id * 10, intent)
+        scheduleExact(triggerTime, (tarea.id * 1000) + OFFSET_EXACT, intent)
 
         val earlyTrigger = nextOccurrence.minusMinutes(REMINDER_MINUTES).toInstant().toEpochMilli()
         if (earlyTrigger > System.currentTimeMillis()) {
             val earlyIntent = createBaseIntent(tarea, "ACTION_REP_EARLY_${tarea.id}").apply {
                 putExtra("EXTRA_IS_EARLY", true)
             }
-            scheduleExact(earlyTrigger, (tarea.id * 10) + 1, earlyIntent)
+            scheduleExact(earlyTrigger, (tarea.id * 1000) + OFFSET_EARLY, earlyIntent)
         }
     }
 
@@ -130,9 +143,18 @@ class AndroidAlarmScheduler @Inject constructor(
 
     override fun cancel(tarea: Tarea) {
         val intent = Intent(context, TaskAlarmReceiver::class.java)
-        val p1 = PendingIntent.getBroadcast(context, tarea.id * 10, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
-        val p2 = PendingIntent.getBroadcast(context, (tarea.id * 10) + 1, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
-        p1?.let { alarmManager.cancel(it) }
-        p2?.let { alarmManager.cancel(it) }
+
+        // Cancelar alarmas fijas (exacta y previa)
+        val pExact = PendingIntent.getBroadcast(context, (tarea.id * 1000) + OFFSET_EXACT, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        val pEarly = PendingIntent.getBroadcast(context, (tarea.id * 1000) + OFFSET_EARLY, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        pExact?.let { alarmManager.cancel(it) }
+        pEarly?.let { alarmManager.cancel(it) }
+
+        // Cancelar alarmas personalizadas (asumimos un máximo razonable para limpiar, o guardamos cuántas había)
+        // Por simplicidad, limpiamos las primeras 10 posibles
+        for (i in 0..10) {
+            val pCustom = PendingIntent.getBroadcast(context, (tarea.id * 1000) + OFFSET_CUSTOM + i, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+            pCustom?.let { alarmManager.cancel(it) }
+        }
     }
 }

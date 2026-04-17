@@ -27,7 +27,7 @@ import com.saico.ada.database.entity.TareaExcepcionEntity
         TareaExcepcionEntity::class,
         CategoriaEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -92,6 +92,12 @@ abstract class AdaDatabase : RoomDatabase() {
                     )
                 """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `tareas` ADD COLUMN `alarmasPersonalizadas` TEXT NOT NULL DEFAULT ''")
             }
         }
     }

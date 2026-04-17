@@ -27,5 +27,8 @@ data class TareaEntity(
     val horaInicio: LocalTime? = null,
     val duracionMinutos: Int = 60,
     val fechaInicioRepeticion: LocalDate? = null,
-    val fechaFinRepeticion: LocalDate? = null
+    val fechaFinRepeticion: LocalDate? = null,
+    
+    // Alarmas personalizadas
+    val alarmasPersonalizadas: List<LocalDateTime> = emptyList()
 )
