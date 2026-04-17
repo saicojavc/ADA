@@ -271,7 +271,7 @@ fun AddTareaDialog(
 
                 Column {
                     Text(
-                        text = "Repetición",
+                        text = stringResource(id = R.string.repeat),
                         style = MaterialTheme.typography.labelSmall,
                         color = VerdeSalvia,
                         fontWeight = FontWeight.Bold
@@ -284,7 +284,7 @@ fun AddTareaDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Repetir esta tarea",
+                            text = stringResource(R.string.repeat_task),
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextoGrisOscuro
                         )
@@ -307,21 +307,41 @@ fun AddTareaDialog(
                         exit = fadeOut() + shrinkVertically()
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                CategoryChip(
-                                    item = CategoryItem("Todos los días", VerdeSalvia, ""),
-                                    isSelected = tipoRepeticionSelected == TipoRepeticion.TODOS_LOS_DIAS,
-                                    onClick = {
-                                        tipoRepeticionSelected = TipoRepeticion.TODOS_LOS_DIAS
-                                    })
-                                CategoryChip(
-                                    item = CategoryItem(
-                                        "Días específicos", VerdeSalvia, ""
-                                    ),
-                                    isSelected = tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS,
-                                    onClick = {
-                                        tipoRepeticionSelected = TipoRepeticion.DIAS_ESPECIFICOS
-                                    })
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                item {
+                                    CategoryChip(
+                                        item = CategoryItem(
+                                            stringResource(id = R.string.all_days),
+                                            VerdeSalvia,
+                                            ""
+                                        ),
+                                        isSelected = tipoRepeticionSelected == TipoRepeticion.TODOS_LOS_DIAS,
+                                        onClick = {
+                                            tipoRepeticionSelected = TipoRepeticion.TODOS_LOS_DIAS
+                                        })
+                                }
+                                item {
+                                    CategoryChip(
+                                        item = CategoryItem(
+                                            stringResource(id = R.string.specific_days),
+                                            VerdeSalvia,
+                                            ""
+                                        ),
+                                        isSelected = tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS,
+                                        onClick = {
+                                            tipoRepeticionSelected = TipoRepeticion.DIAS_ESPECIFICOS
+                                        })
+                                }
+                                item {
+                                    CategoryChip(
+                                        item = CategoryItem(
+                                            stringResource(id = R.string.monthly), VerdeSalvia, ""
+                                        ),
+                                        isSelected = tipoRepeticionSelected == TipoRepeticion.MENSUAL,
+                                        onClick = {
+                                            tipoRepeticionSelected = TipoRepeticion.MENSUAL
+                                        })
+                                }
                             }
                             if (tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS) {
                                 LazyRow(
@@ -365,12 +385,14 @@ fun AddTareaDialog(
                                     }
                                 }
                             }
+                            val noDeadlineText = stringResource(R.string.no_deadline)
+
                             val endRepeatDateFormatted = remember(fechaFinRepeticion, locale) {
                                 fechaFinRepeticion?.format(
                                     DateTimeFormatter.ofLocalizedDate(
                                         FormatStyle.MEDIUM
                                     ).withLocale(locale)
-                                ) ?: "Sin fecha límite"
+                                ) ?: noDeadlineText
                             }
                             OutlinedCard(
                                 onClick = { showEndRepeatDatePicker = true },
@@ -393,7 +415,7 @@ fun AddTareaDialog(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
-                                            text = "Repetir hasta",
+                                            text = stringResource(id = R.string.repeat_to),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = TextoGrisOscuro.copy(alpha = 0.5f)
                                         )
@@ -747,10 +769,11 @@ fun TimeSelectionCard(label: String, time: LocalTime, modifier: Modifier, onClic
 
 @Composable
 fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(modifier = Modifier
-        .clickable { onClick() }
-        .height(40.dp)
-        .padding(horizontal = 4.dp),
+    Surface(
+        modifier = Modifier
+            .clickable { onClick() }
+            .height(40.dp)
+            .padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) item.color else item.color.copy(alpha = 0.15f),
         border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
@@ -759,6 +782,29 @@ fun CategoryChip(item: CategoryItem, isSelected: Boolean, onClick: () -> Unit) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
                 text = item.name,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (isSelected) Color.White else TextoGrisOscuro,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+    }
+}
+
+@Composable
+fun SimpleChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .clickable { onClick() }
+            .height(40.dp)
+            .padding(horizontal = 4.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = if (isSelected) VerdeSalvia else VerdeSalvia.copy(alpha = 0.15f),
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
+            1.dp, VerdeSalvia.copy(alpha = 0.3f)
+        )) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
+            Text(
+                text = label,
                 style = MaterialTheme.typography.labelLarge,
                 color = if (isSelected) Color.White else TextoGrisOscuro,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -1064,10 +1110,11 @@ fun AddNotaDialog(
 fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
     val color = tarea.colorHex.toComposeColor()
     val dateFormatter = DateTimeFormatter.ofPattern("dd MMM")
-    Surface(modifier = Modifier
-        .clickable { onClick() }
-        .width(150.dp)
-        .height(60.dp),
+    Surface(
+        modifier = Modifier
+            .clickable { onClick() }
+            .width(150.dp)
+            .height(60.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) color else color.copy(alpha = 0.1f),
         border = BorderStroke(1.dp, color.copy(alpha = 0.5f))) {

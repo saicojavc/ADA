@@ -201,4 +201,12 @@
     <string name="widget_all_clear">Everything in calm</string>
     <string name="widget_label">ADA — Today\'s Tasks</string>
     <string name="widget_description">Shows your pending tasks for the day</string>
+
+    <string name="repeat">Repetition</string>
+    <string name="repeat_task">Repeat this task</string>
+    <string name="specific_days">Specific days</string>
+    <string name="no_deadline">No deadline</string>
+    <string name="repeat_to">Repeat until</string>
+    <string name="all_days">All days</string>
+    <string name="monthly">Monthly</string>
 </resources>

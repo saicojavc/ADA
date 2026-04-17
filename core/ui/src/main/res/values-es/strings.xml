@@ -201,4 +201,12 @@
     <string name="widget_all_clear">Todo en calma</string>
     <string name="widget_label">ADA — Tareas de hoy</string>
     <string name="widget_description">Muestra tus tareas pendientes del día</string>
+
+    <string name="repeat">Repetición</string>
+    <string name="repeat_task">Repetir esta tarea</string>
+    <string name="specific_days">Días específicos</string>'
+    <string name="no_deadline">Sin fecha límite</string>
+    <string name="repeat_to">Repetir hasta</string>
+    <string name="all_days">Todos los días</string>
+    <string name="monthly">Mensual</string>
 </resources>
