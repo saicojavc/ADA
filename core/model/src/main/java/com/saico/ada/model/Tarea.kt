@@ -23,5 +23,7 @@ data class Tarea(
     val duracionMinutos: Int = 60,
     val fechaInicioRepeticion: LocalDate? = null,
     val fechaFinRepeticion: LocalDate? = null,
-    val plantillaId: Int? = null
+    val plantillaId: Int? = null,
+    // Nuevo campo para alarmas personalizadas
+    val alarmasPersonalizadas: List<LocalDateTime> = emptyList()
 )

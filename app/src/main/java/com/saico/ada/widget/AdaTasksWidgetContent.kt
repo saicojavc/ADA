@@ -5,10 +5,10 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.cornerRadius
@@ -62,8 +62,9 @@ object AdaTheme {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AdaTasksWidgetContent(tareas: List<WidgetTarea>) {
+    val context = LocalContext.current
     val today = LocalDate.now()
-    val locale = Locale("es")
+    val locale = Locale("en")
     val dayName = today.format(DateTimeFormatter.ofPattern("EEEE", locale))
         .replaceFirstChar { it.uppercase() }
     val dateLabel = today.format(DateTimeFormatter.ofPattern("d 'de' MMMM", locale))
@@ -103,11 +104,10 @@ fun AdaTasksWidgetContent(tareas: List<WidgetTarea>) {
                     )
                 }
 
-                // Indicador de cantidad de tareas pendientes
                 val pendientes = tareas.count { !it.estaCompletada }
                 if (pendientes > 0) {
                     Text(
-                        text = stringResource(R.string.widget_pending_tasks, pendientes),
+                        text = context.getString(R.string.widget_pending_tasks, pendientes),
                         style = TextStyle(
                             color = AdaTheme.Terracota,
                             fontSize = 11.sp,
@@ -129,7 +129,7 @@ fun AdaTasksWidgetContent(tareas: List<WidgetTarea>) {
                             style = TextStyle(color = AdaTheme.Verde, fontSize = 24.sp)
                         )
                         Text(
-                            text = stringResource(R.string.widget_all_clear),
+                            text = context.getString(R.string.widget_all_clear),
                             style = TextStyle(color = AdaTheme.TextoSecundario, fontSize = 14.sp)
                         )
                     }
@@ -151,7 +151,11 @@ private fun WidgetTareaCard(tarea: WidgetTarea) {
     val completada = tarea.estaCompletada
 
     val taskColor = try {
-        ColorProvider(Color(android.graphics.Color.parseColor(tarea.colorHex)))
+        if (!tarea.colorHex.isNullOrBlank() && tarea.colorHex.startsWith("#")) {
+            ColorProvider(Color(android.graphics.Color.parseColor(tarea.colorHex)))
+        } else {
+            AdaTheme.Verde
+        }
     } catch (e: Exception) {
         AdaTheme.Verde
     }
@@ -167,7 +171,6 @@ private fun WidgetTareaCard(tarea: WidgetTarea) {
             modifier = GlanceModifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Círculo de estado en lugar de barra lateral (más orgánico)
             Box(
                 modifier = GlanceModifier
                     .size(12.dp)
@@ -181,7 +184,7 @@ private fun WidgetTareaCard(tarea: WidgetTarea) {
                 Text(
                     text = tarea.titulo,
                     style = TextStyle(
-                        color = if (completada) AdaTheme.TextoSecundario else AdaTheme.TextoPrincipal,
+                        color = if (completada) AdaTheme.GrisSuave else AdaTheme.TextoPrincipal,
                         fontSize = 14.sp,
                         fontWeight = if (completada) FontWeight.Normal else FontWeight.Medium,
                         textDecoration = if (completada) TextDecoration.LineThrough else TextDecoration.None
@@ -189,18 +192,15 @@ private fun WidgetTareaCard(tarea: WidgetTarea) {
                     maxLines = 1
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = tarea.hora,
-                        style = TextStyle(
-                            color = AdaTheme.TextoSecundario,
-                            fontSize = 11.sp
-                        )
+                Text(
+                    text = tarea.hora,
+                    style = TextStyle(
+                        color = AdaTheme.TextoSecundario,
+                        fontSize = 11.sp
                     )
-                }
+                )
             }
 
-            // Check icon sutil
             if (completada) {
                 Text(
                     text = "✓",

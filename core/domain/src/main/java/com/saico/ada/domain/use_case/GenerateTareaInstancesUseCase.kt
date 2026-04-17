@@ -23,11 +23,15 @@ class GenerateTareaInstancesUseCase @Inject constructor() {
 
             if (fecha.isBefore(inicio) || fecha.isAfter(fin)) return@mapNotNull null
 
-            // Verificar si el día de la semana coincide si es DIAS_ESPECIFICOS
+            // Verificar si el día coincide según el tipo de repetición
             when (plantilla.tipoRepeticion) {
-                TipoRepeticion.TODOS_LOS_DIAS -> { /* Aplica */ }
+                TipoRepeticion.TODOS_LOS_DIAS -> { /* Aplica todos los días */ }
                 TipoRepeticion.DIAS_ESPECIFICOS -> {
                     if (fecha.dayOfWeek !in plantilla.diasRepeticion) return@mapNotNull null
+                }
+                TipoRepeticion.MENSUAL -> {
+                    // Solo aplica si el día del mes coincide con el día de inicio
+                    if (fecha.dayOfMonth != inicio.dayOfMonth) return@mapNotNull null
                 }
                 TipoRepeticion.NINGUNA -> return@mapNotNull null
             }
@@ -40,7 +44,7 @@ class GenerateTareaInstancesUseCase @Inject constructor() {
             val fechaHoraInicio = LocalDateTime.of(fecha, horaInicio)
             
             Tarea(
-                id = plantilla.id, // IMPORTANTE: Usamos el ID de la plantilla para que el vínculo sea consistente
+                id = plantilla.id,
                 titulo = plantilla.titulo,
                 descripcion = plantilla.descripcion,
                 fechaHoraInicio = fechaHoraInicio,

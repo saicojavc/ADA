@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import com.saico.ada.domain.alarm.AlarmScheduler
 import com.saico.ada.domain.repository.TareaExcepcionRepository
 import com.saico.ada.domain.repository.TareaRepository
+import com.saico.ada.ui.R
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,7 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         val taskId = intent.getIntExtra("EXTRA_TASK_ID", -1)
         val isRepeating = intent.getBooleanExtra("EXTRA_IS_REPEATING", false)
         val isEarly = intent.getBooleanExtra("EXTRA_IS_EARLY", false)
+        val isCustom = intent.getBooleanExtra("EXTRA_IS_CUSTOM", false)
         
         if (taskId == -1) return
 
@@ -49,7 +51,6 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 if (isRepeating) {
-                    // 1. Verificar si hay una excepción para hoy (completada o saltada)
                     val excepciones = tareaExcepcionRepository.getAllExcepciones().first()
                     val estaCanceladaHoy = excepciones.any { 
                         it.plantillaId == taskId && it.fecha == hoy && (it.estaCompletada || it.estaSaltada) 
@@ -59,15 +60,10 @@ class TaskAlarmReceiver : BroadcastReceiver() {
                         processNotification(context, intent)
                     }
 
-                    // 2. Programar la SIGUIENTE ocurrencia si es la alarma exacta
-                    // Usamos alarmas de un solo disparo para máxima precisión, 
-                    // así que el Receiver debe encadenar la siguiente.
-                    if (!isEarly) {
+                    if (!isEarly && !isCustom) {
                         val todasLasTareas = tareaRepository.getAllTareas().first()
                         val plantilla = todasLasTareas.find { it.id == taskId }
-                        plantilla?.let {
-                            alarmScheduler.schedule(it)
-                        }
+                        plantilla?.let { alarmScheduler.schedule(it) }
                     }
                 } else {
                     processNotification(context, intent)
@@ -86,8 +82,9 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         val category = intent.getStringExtra("EXTRA_TASK_CATEGORY") ?: "General"
         val time = intent.getStringExtra("EXTRA_TASK_TIME") ?: ""
         val isEarly = intent.getBooleanExtra("EXTRA_IS_EARLY", false)
+        val isCustom = intent.getBooleanExtra("EXTRA_IS_CUSTOM", false)
 
-        showNotification(context, taskId, title, category, time, isEarly)
+        showNotification(context, taskId, title, category, time, isEarly, isCustom)
     }
 
     private fun showNotification(
@@ -96,17 +93,17 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         title: String,
         category: String,
         time: String,
-        isEarly: Boolean
+        isEarly: Boolean,
+        isCustom: Boolean
     ) {
         val channelId = "task_critical_channel"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Avisos Críticos ADA"
+            val name = context.getString(R.string.notif_channel_name)
             val channel = NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_HIGH).apply {
                 setBypassDnd(true)
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
                 
                 val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 val audioAttributes = AudioAttributes.Builder()
@@ -118,18 +115,27 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val contentTitle = if (isEarly) "ADA: Tarea en 30 min" else "ADA: Es el momento"
         val formattedTime = if (time.contains(":")) {
             val parts = time.split(":")
             if (parts.size >= 2) "${parts[0]}:${parts[1]}" else time
         } else time
 
-        val contentText = "[$category] $title ($formattedTime)"
+        val contentTitle = when {
+            isCustom -> context.getString(R.string.notif_custom_title)
+            isEarly -> context.getString(R.string.notif_early_title)
+            else -> context.getString(R.string.notif_exact_title)
+        }
+
+        val contentText = if (isCustom) {
+            context.getString(R.string.notif_custom_text, title, formattedTime)
+        } else {
+            context.getString(R.string.notif_task_entry, category, title, formattedTime)
+        }
 
         val mainIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         val pendingIntent = PendingIntent.getActivity(
             context, 
-            if (isEarly) taskId + 10000 else taskId, 
+            taskId + (if (isCustom) 20000 else if (isEarly) 10000 else 0), 
             mainIntent, 
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -141,14 +147,14 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .setOngoing(!isEarly)
+            .setOngoing(!isEarly && !isCustom)
             .setColor(0xFF81B29A.toInt())
             .setVibrate(longArrayOf(0, 1000, 500, 1000))
             .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(pendingIntent, true)
+            .setFullScreenIntent(pendingIntent, !isCustom && !isEarly)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        notificationManager.notify(if (isEarly) taskId + 10000 else taskId, notificationBuilder.build())
+        notificationManager.notify(taskId + (if (isCustom) 20000 else if (isEarly) 10000 else 0), notificationBuilder.build())
     }
 }
