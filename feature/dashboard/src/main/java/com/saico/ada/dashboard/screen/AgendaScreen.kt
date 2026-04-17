@@ -225,10 +225,14 @@ fun AgendaScreen(
         AddTareaDialog(
             tarea = tareaToEdit,
             isMother = successState?.isMother ?: false,
+            customCategorias = successState?.categorias ?: emptyList(),
             onDismiss = { tareaToEdit = null },
             onConfirm = { editedTarea ->
                 viewModel?.addTarea(editedTarea)
                 tareaToEdit = null
+            },
+            onAddCustomCategory = { nombre, colorHex ->
+                viewModel?.addCategoriaPersonalizada(nombre, colorHex)
             }
         )
     }

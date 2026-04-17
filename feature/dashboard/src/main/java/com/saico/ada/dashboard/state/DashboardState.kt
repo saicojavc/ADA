@@ -3,6 +3,7 @@ package com.saico.ada.dashboard.state
 import androidx.annotation.StringRes
 import com.saico.ada.domain.use_case.SuggestionType
 import com.saico.ada.model.Bienestar
+import com.saico.ada.model.Categoria
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 
@@ -14,6 +15,7 @@ sealed class DashboardState {
         val todasLasTareas: List<Tarea>,
         val registrosBienestar: List<Bienestar>,
         val notas: List<Nota>,
+        val categorias: List<Categoria> = emptyList(),
         val userName: String,
         @StringRes val greetingRes: Int,
         val isMother: Boolean,

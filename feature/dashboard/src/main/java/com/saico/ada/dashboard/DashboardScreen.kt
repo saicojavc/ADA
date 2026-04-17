@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.saico.ada.dashboard.components.AddBienestarDialog
 import com.saico.ada.dashboard.components.AddNotaDialog
 import com.saico.ada.dashboard.components.AddTareaDialog
 import com.saico.ada.dashboard.components.NavigationBar
@@ -59,7 +58,6 @@ fun Context(
     var isFabExpanded by remember { mutableStateOf(false) }
 
     var showAddTareaDialog by remember { mutableStateOf(false) }
-    var showAddBienestarDialog by remember { mutableStateOf(false) }
     var showAddNotaDialog by remember { mutableStateOf(false) }
 
     val successState = uiState as? DashboardState.Success
@@ -137,22 +135,17 @@ fun Context(
 
         if (showAddTareaDialog) {
             val isMother = successState?.isMother ?: false
+            val customCategorias = successState?.categorias ?: emptyList()
             AddTareaDialog(
                 isMother = isMother,
+                customCategorias = customCategorias,
                 onDismiss = { showAddTareaDialog = false },
                 onConfirm = { tarea ->
                     viewModel.addTarea(tarea)
                     showAddTareaDialog = false
-                }
-            )
-        }
-
-        if (showAddBienestarDialog) {
-            AddBienestarDialog(
-                onDismiss = { showAddBienestarDialog = false },
-                onConfirm = { nombre, hora ->
-                    viewModel.addRitualPersonalizado(nombre, hora)
-                    showAddBienestarDialog = false
+                },
+                onAddCustomCategory = { nombre, colorHex ->
+                    viewModel.addCategoriaPersonalizada(nombre, colorHex)
                 }
             )
         }

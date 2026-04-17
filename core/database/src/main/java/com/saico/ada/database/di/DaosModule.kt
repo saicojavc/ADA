@@ -2,6 +2,7 @@ package com.saico.ada.database.di
 
 import com.saico.ada.database.AdaDatabase
 import com.saico.ada.database.dao.BienestarDao
+import com.saico.ada.database.dao.CategoriaDao
 import com.saico.ada.database.dao.EventDao
 import com.saico.ada.database.dao.NotaDao
 import com.saico.ada.database.dao.TareaDao
@@ -29,4 +30,7 @@ object DaosModule {
 
     @Provides
     fun provideTareaExcepcionDao(database: AdaDatabase): TareaExcepcionDao = database.tareaExcepcionDao
+
+    @Provides
+    fun provideCategoriaDao(database: AdaDatabase): CategoriaDao = database.categoriaDao
 }

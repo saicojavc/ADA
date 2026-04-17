@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
@@ -67,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -77,6 +79,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.saico.ada.common.util.CategorySuggester
+import com.saico.ada.model.Categoria
 import com.saico.ada.model.EventCategory
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
@@ -97,16 +100,17 @@ import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
 import java.time.format.TextStyle as JavaTextStyle
 
-// ─────────────────────────────────────────────────────────────
-//  Utilidad de normalización (Ya no es necesaria aquí, está en common)
-// ─────────────────────────────────────────────────────────────
-
 @SuppressLint("LocalContextConfigurationRead")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTareaDialog(
-    tarea: Tarea? = null, isMother: Boolean, onDismiss: () -> Unit, onConfirm: (Tarea) -> Unit
+    tarea: Tarea? = null,
+    isMother: Boolean,
+    customCategorias: List<Categoria> = emptyList(),
+    onDismiss: () -> Unit,
+    onConfirm: (Tarea) -> Unit,
+    onAddCustomCategory: (String, String) -> Unit
 ) {
     val catWork = stringResource(R.string.cat_work)
     val catHome = stringResource(R.string.cat_home)
@@ -144,25 +148,38 @@ fun AddTareaDialog(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showEndRepeatDatePicker by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
 
-    val baseCategorias =
-        remember(isMother, catWork, catHome, catWellbeing, catMaternity, catPersonal) {
-            val list = mutableListOf(
-                CategoryItem(catWork, AmbarNeutro, "#F2CC8F"),
-                CategoryItem(catHome, VerdeSalvia, "#81B29A"),
-                CategoryItem(catWellbeing, Color(0xFF945FFB), "#945FFB"),
-                CategoryItem(catPersonal, Color(0xFF5A9BD5), "#5A9BD5")
-            )
-            if (isMother) {
-                list.add(CategoryItem(catMaternity, TerracotaSuave, "#E07A5F"))
-            }
-            list
+    val allCategories = remember(
+        isMother,
+        customCategorias,
+        catWork,
+        catHome,
+        catWellbeing,
+        catMaternity,
+        catPersonal
+    ) {
+        val list = mutableListOf(
+            CategoryItem(catWork, AmbarNeutro, "#F2CC8F"),
+            CategoryItem(catHome, VerdeSalvia, "#81B29A"),
+            CategoryItem(catWellbeing, Color(0xFF945FFB), "#945FFB"),
+            CategoryItem(catPersonal, Color(0xFF5A9BD5), "#5A9BD5")
+        )
+        if (isMother) {
+            list.add(CategoryItem(catMaternity, TerracotaSuave, "#E07A5F"))
         }
+        list.addAll(customCategorias.map {
+            CategoryItem(
+                it.nombre,
+                it.colorHex.toComposeColor(),
+                it.colorHex
+            )
+        })
+        list
+    }
 
-    // Sugerencia automática de categoría desacoplada en core:common
     LaunchedEffect(titulo) {
         if (titulo.isBlank()) return@LaunchedEffect
-
         val suggestedEnum = CategorySuggester.suggestCategory(titulo, isMother)
         val suggestedName = when (suggestedEnum) {
             EventCategory.WORK -> catWork
@@ -172,7 +189,6 @@ fun AddTareaDialog(
             EventCategory.PERSONAL -> catPersonal
             EventCategory.UNCATEGORIZED -> categoriaSelected
         }
-
         if (suggestedEnum != EventCategory.UNCATEGORIZED) {
             categoriaSelected = suggestedName
         }
@@ -214,7 +230,7 @@ fun AddTareaDialog(
 
                 Column {
                     Text(
-                        stringResource(R.string.dialog_suggested_category),
+                        stringResource(R.string.dialog_category_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = VerdeSalvia,
                         fontWeight = FontWeight.Bold
@@ -222,13 +238,33 @@ fun AddTareaDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(baseCategorias) { cat ->
+                        items(allCategories) { cat ->
                             CategoryChip(
                                 item = cat,
                                 isSelected = categoriaSelected == cat.name,
                                 onClick = { categoriaSelected = cat.name })
+                        }
+                        item {
+                            Surface(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clickable { showAddCategoryDialog = true },
+                                shape = CircleShape,
+                                color = VerdeSalvia.copy(alpha = 0.1f),
+                                border = BorderStroke(1.dp, VerdeSalvia.copy(alpha = 0.3f))
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Rounded.Add,
+                                        null,
+                                        tint = VerdeSalvia,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -309,38 +345,31 @@ fun AddTareaDialog(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 item {
-                                    CategoryChip(
-                                        item = CategoryItem(
-                                            stringResource(id = R.string.all_days),
-                                            VerdeSalvia,
-                                            ""
-                                        ),
+                                    SimpleChip(
+                                        label = stringResource(id = R.string.all_days),
                                         isSelected = tipoRepeticionSelected == TipoRepeticion.TODOS_LOS_DIAS,
                                         onClick = {
                                             tipoRepeticionSelected = TipoRepeticion.TODOS_LOS_DIAS
-                                        })
+                                        }
+                                    )
                                 }
                                 item {
-                                    CategoryChip(
-                                        item = CategoryItem(
-                                            stringResource(id = R.string.specific_days),
-                                            VerdeSalvia,
-                                            ""
-                                        ),
+                                    SimpleChip(
+                                        label = stringResource(id = R.string.specific_days),
                                         isSelected = tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS,
                                         onClick = {
                                             tipoRepeticionSelected = TipoRepeticion.DIAS_ESPECIFICOS
-                                        })
+                                        }
+                                    )
                                 }
                                 item {
-                                    CategoryChip(
-                                        item = CategoryItem(
-                                            stringResource(id = R.string.monthly), VerdeSalvia, ""
-                                        ),
+                                    SimpleChip(
+                                        label = stringResource(id = R.string.monthly),
                                         isSelected = tipoRepeticionSelected == TipoRepeticion.MENSUAL,
                                         onClick = {
                                             tipoRepeticionSelected = TipoRepeticion.MENSUAL
-                                        })
+                                        }
+                                    )
                                 }
                             }
                             if (tipoRepeticionSelected == TipoRepeticion.DIAS_ESPECIFICOS) {
@@ -374,7 +403,8 @@ fun AddTareaDialog(
                                             Box(contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = day.getDisplayName(
-                                                        JavaTextStyle.NARROW, locale
+                                                        JavaTextStyle.NARROW,
+                                                        locale
                                                     ),
                                                     color = if (isSelected) Color.White else TextoGrisOscuro,
                                                     fontWeight = FontWeight.Bold,
@@ -386,12 +416,10 @@ fun AddTareaDialog(
                                 }
                             }
                             val noDeadlineText = stringResource(R.string.no_deadline)
-
                             val endRepeatDateFormatted = remember(fechaFinRepeticion, locale) {
                                 fechaFinRepeticion?.format(
-                                    DateTimeFormatter.ofLocalizedDate(
-                                        FormatStyle.MEDIUM
-                                    ).withLocale(locale)
+                                    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                                        .withLocale(locale)
                                 ) ?: noDeadlineText
                             }
                             OutlinedCard(
@@ -399,7 +427,9 @@ fun AddTareaDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.outlinedCardColors(
-                                    containerColor = Color.White.copy(alpha = 0.3f)
+                                    containerColor = Color.White.copy(
+                                        alpha = 0.3f
+                                    )
                                 )
                             ) {
                                 Row(
@@ -435,9 +465,11 @@ fun AddTareaDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val selectedCat =
-                        baseCategorias.find { it.name == categoriaSelected } ?: CategoryItem(
-                            categoriaSelected, VerdeSalvia, "#81B29A"
+                    val selectedCatItem =
+                        allCategories.find { it.name == categoriaSelected } ?: CategoryItem(
+                            categoriaSelected,
+                            VerdeSalvia,
+                            "#81B29A"
                         )
                     if (titulo.isNotBlank()) {
                         val duracion =
@@ -452,12 +484,14 @@ fun AddTareaDialog(
                                 descripcion = tarea?.descripcion ?: "",
                                 fechaHoraInicio = LocalDateTime.of(selectedDate, selectedStartTime),
                                 fechaHoraFin = if (esRepetible) LocalDateTime.of(
-                                    selectedDate, selectedStartTime
+                                    selectedDate,
+                                    selectedStartTime
                                 ).plusMinutes(duracion.toLong()) else LocalDateTime.of(
-                                    selectedDate, selectedEndTime
+                                    selectedDate,
+                                    selectedEndTime
                                 ),
-                                categoria = selectedCat.name,
-                                colorHex = selectedCat.hex,
+                                categoria = selectedCatItem.name,
+                                colorHex = selectedCatItem.hex,
                                 estaCompletada = tarea?.estaCompletada ?: false,
                                 esPlantilla = esRepetible,
                                 tipoRepeticion = if (esRepetible) tipoRepeticionSelected else TipoRepeticion.NINGUNA,
@@ -483,11 +517,20 @@ fun AddTareaDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(
-                    stringResource(R.string.action_cancel), color = TerracotaSuave
-                )
+                Text(stringResource(R.string.action_cancel), color = TerracotaSuave)
             }
         })
+
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onConfirm = { nombre, colorHex ->
+                onAddCustomCategory(nombre, colorHex)
+                categoriaSelected = nombre
+                showAddCategoryDialog = false
+            }
+        )
+    }
 
     if (showDatePicker) {
         AdaDatePickerWheelDialog(
@@ -501,8 +544,9 @@ fun AddTareaDialog(
             initialTime = selectedStartTime,
             onDismiss = { showStartTimePicker = false },
             onConfirm = {
-                selectedStartTime = it; if (selectedEndTime.isBefore(it)) selectedEndTime =
-                it.plusHours(1); showStartTimePicker = false
+                selectedStartTime = it
+                if (selectedEndTime.isBefore(it)) selectedEndTime = it.plusHours(1)
+                showStartTimePicker = false
             })
     }
     if (showEndTimePicker) {
@@ -519,9 +563,95 @@ fun AddTareaDialog(
             onConfirm = {
                 if (it.isAfter(selectedDate)) {
                     fechaFinRepeticion = it
-                }; showEndRepeatDatePicker = false
+                }
+                showEndRepeatDatePicker = false
             })
     }
+}
+
+@Composable
+fun AddCategoryDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+    var nombre by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(Color(0xFF81B29A)) }
+
+    val colors = listOf(
+        Color(0xFF81B29A), Color(0xFFE07A5F), Color(0xFFF2CC8F),
+        Color(0xFF3D405B), Color(0xFF945FFB), Color(0xFF5A9BD5),
+        Color(0xFFE85D75), Color(0xFFFFB703), Color(0xFF023047)
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BaseCrema,
+        shape = RoundedCornerShape(28.dp),
+        title = { Text("Nueva Categoría", color = TextoGrisOscuro, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre de la categoría") },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextoGrisOscuro,
+                        focusedLabelColor = VerdeSalvia,
+                        cursorColor = VerdeSalvia
+                    )
+                )
+
+                Column {
+                    Text(
+                        "Color",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = VerdeSalvia,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(colors) { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(color, CircleShape)
+                                    .clickable { selectedColor = color }
+                                    .padding(4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selectedColor == color) {
+                                    Icon(
+                                        Icons.Rounded.Check,
+                                        null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (nombre.isNotBlank()) {
+                        val hex = String.format("#%06X", (0xFFFFFF and selectedColor.toArgb()))
+                        onConfirm(nombre, hex)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("Añadir", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel), color = TerracotaSuave)
+            }
+        }
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -533,18 +663,12 @@ fun AdaDatePickerWheelDialog(
     var selectedMonth by remember { mutableIntStateOf(initialDate.monthValue) }
     var selectedYear by remember { mutableIntStateOf(initialDate.year) }
     val months = listOf(
-        stringResource(R.string.month_jan),
-        stringResource(R.string.month_feb),
-        stringResource(R.string.month_mar),
-        stringResource(R.string.month_apr),
-        stringResource(R.string.month_may),
-        stringResource(R.string.month_jun),
-        stringResource(R.string.month_jul),
-        stringResource(R.string.month_aug),
-        stringResource(R.string.month_sep),
-        stringResource(R.string.month_oct),
-        stringResource(R.string.month_nov),
-        stringResource(R.string.month_dec)
+        stringResource(R.string.month_jan), stringResource(R.string.month_feb),
+        stringResource(R.string.month_mar), stringResource(R.string.month_apr),
+        stringResource(R.string.month_may), stringResource(R.string.month_jun),
+        stringResource(R.string.month_jul), stringResource(R.string.month_aug),
+        stringResource(R.string.month_sep), stringResource(R.string.month_oct),
+        stringResource(R.string.month_nov), stringResource(R.string.month_dec)
     )
     val years = (2024..2030).map { it.toString() }
     Dialog(onDismissRequest = onDismiss) {
@@ -591,16 +715,16 @@ fun AdaDatePickerWheelDialog(
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
-                        Text(
-                            stringResource(R.string.action_cancel), color = TerracotaSuave
-                        )
+                        Text(stringResource(R.string.action_cancel), color = TerracotaSuave)
                     }
                     TextButton(onClick = {
                         try {
                             val finalDate = LocalDate.of(selectedYear, selectedMonth, 1);
                             val maxDay = finalDate.lengthOfMonth(); onConfirm(
                                 LocalDate.of(
-                                    selectedYear, selectedMonth, selectedDay.coerceIn(1, maxDay)
+                                    selectedYear,
+                                    selectedMonth,
+                                    selectedDay.coerceIn(1, maxDay)
                                 )
                             )
                         } catch (e: Exception) {
@@ -657,7 +781,9 @@ fun AdaTimeWheelPickerDialog(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        ":", style = MaterialTheme.typography.headlineLarge, color = TextoGrisOscuro
+                        ":",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = TextoGrisOscuro
                     )
                     WheelColumn(
                         items = (0..59).map { it.toString().padStart(2, '0') },
@@ -669,16 +795,10 @@ fun AdaTimeWheelPickerDialog(
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
-                        Text(
-                            stringResource(R.string.action_cancel), color = TerracotaSuave
-                        )
+                        Text(stringResource(R.string.action_cancel), color = TerracotaSuave)
                     }
                     TextButton(onClick = {
-                        onConfirm(
-                            LocalTime.of(
-                                selectedHour, selectedMinute
-                            )
-                        )
+                        onConfirm(LocalTime.of(selectedHour, selectedMinute))
                     }) {
                         Text(
                             stringResource(R.string.action_confirm),
@@ -813,8 +933,6 @@ fun SimpleChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
     }
 }
 
-data class CategoryItem(val name: String, val color: Color, val hex: String)
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) -> Unit) {
@@ -848,7 +966,6 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextoGrisOscuro,
-                        unfocusedTextColor = TextoGrisOscuro,
                         focusedLabelColor = VerdeSalvia,
                         cursorColor = VerdeSalvia
                     ),
@@ -878,11 +995,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (nombreRitual.isNotBlank()) onConfirm(
-                        nombreRitual, selectedTime
-                    )
-                },
+                onClick = { if (nombreRitual.isNotBlank()) onConfirm(nombreRitual, selectedTime) },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
                 shape = RoundedCornerShape(16.dp),
                 enabled = nombreRitual.isNotBlank()
@@ -896,9 +1009,7 @@ fun AddBienestarDialog(onDismiss: () -> Unit, onConfirm: (String, LocalTime?) ->
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(
-                    stringResource(R.string.action_cancel), color = TerracotaSuave
-                )
+                Text(stringResource(R.string.action_cancel), color = TerracotaSuave)
             }
         })
     if (showTimePicker) {
@@ -985,7 +1096,6 @@ fun AddNotaDialog(
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextoGrisOscuro,
-                        unfocusedTextColor = TextoGrisOscuro,
                         cursorColor = VerdeSalvia
                     ),
                     textStyle = TextStyle(color = TextoGrisOscuro)
@@ -999,7 +1109,6 @@ fun AddNotaDialog(
                     minLines = 3,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextoGrisOscuro,
-                        unfocusedTextColor = TextoGrisOscuro,
                         cursorColor = VerdeSalvia
                     ),
                     textStyle = TextStyle(color = TextoGrisOscuro)
@@ -1013,7 +1122,6 @@ fun AddNotaDialog(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1049,9 +1157,7 @@ fun AddNotaDialog(
                             )
                         )
                     }
-
                     Spacer(modifier = Modifier.height(8.dp))
-
                     if (filteredTareas.isEmpty()) {
                         Text(
                             "No hay tareas en este periodo.",
@@ -1067,7 +1173,9 @@ fun AddNotaDialog(
                                 val taskUIId = "${tarea.id}_${tarea.fechaHoraInicio}"
                                 val isSelected = selectedTaskUIId == taskUIId
                                 TareaChip(
-                                    tarea = tarea, isSelected = isSelected, onClick = {
+                                    tarea = tarea,
+                                    isSelected = isSelected,
+                                    onClick = {
                                         selectedTaskUIId = if (isSelected) null else taskUIId
                                     })
                             }
@@ -1080,10 +1188,8 @@ fun AddNotaDialog(
             Button(
                 onClick = {
                     if (titulo.isNotBlank() && contenido.isNotBlank()) {
-                        val actualTaskId =
-                            selectedTaskUIId?.split("_")?.first()?.toIntOrNull(); onConfirm(
-                            titulo, contenido, actualTaskId
-                        )
+                        val actualTaskId = selectedTaskUIId?.split("_")?.first()?.toIntOrNull()
+                        onConfirm(titulo, contenido, actualTaskId)
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSalvia),
@@ -1098,9 +1204,7 @@ fun AddNotaDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(
-                    stringResource(R.string.action_cancel), color = TerracotaSuave
-                )
+                Text(stringResource(R.string.action_cancel), color = TerracotaSuave)
             }
         })
 }
@@ -1150,3 +1254,5 @@ fun TareaChip(tarea: Tarea, isSelected: Boolean, onClick: () -> Unit) {
         }
     }
 }
+
+data class CategoryItem(val name: String, val color: Color, val hex: String)

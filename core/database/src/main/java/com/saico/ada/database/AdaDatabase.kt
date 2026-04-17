@@ -6,11 +6,13 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.saico.ada.database.dao.BienestarDao
+import com.saico.ada.database.dao.CategoriaDao
 import com.saico.ada.database.dao.EventDao
 import com.saico.ada.database.dao.NotaDao
 import com.saico.ada.database.dao.TareaDao
 import com.saico.ada.database.dao.TareaExcepcionDao
 import com.saico.ada.database.entity.BienestarEntity
+import com.saico.ada.database.entity.CategoriaEntity
 import com.saico.ada.database.entity.EventEntity
 import com.saico.ada.database.entity.NotaEntity
 import com.saico.ada.database.entity.TareaEntity
@@ -22,9 +24,10 @@ import com.saico.ada.database.entity.TareaExcepcionEntity
         TareaEntity::class,
         BienestarEntity::class,
         NotaEntity::class,
-        TareaExcepcionEntity::class
+        TareaExcepcionEntity::class,
+        CategoriaEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -34,6 +37,7 @@ abstract class AdaDatabase : RoomDatabase() {
     abstract val bienestarDao: BienestarDao
     abstract val notaDao: NotaDao
     abstract val tareaExcepcionDao: TareaExcepcionDao
+    abstract val categoriaDao: CategoriaDao
 
     companion object {
         const val DATABASE_NAME = "ada_db"
@@ -65,7 +69,6 @@ abstract class AdaDatabase : RoomDatabase() {
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Para cambiar un índice a UNIQUE en SQLite, lo más seguro es borrar el viejo y crear el nuevo
                 db.execSQL("DROP INDEX IF EXISTS `index_tarea_excepciones_plantillaId` ")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tarea_excepciones_plantillaId_fecha` ON `tarea_excepciones` (`plantillaId`, `fecha`)")
             }
@@ -74,6 +77,21 @@ abstract class AdaDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `notas_rapidas` ADD COLUMN `tareaId` INTEGER")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `categorias` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+                        `nombre` TEXT NOT NULL, 
+                        `colorHex` TEXT NOT NULL, 
+                        `esPersonalizada` INTEGER NOT NULL DEFAULT 1
+                    )
+                """.trimIndent()
+                )
             }
         }
     }

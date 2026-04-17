@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,8 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BusinessCenter
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
@@ -31,7 +30,6 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.SelfImprovement
-import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,13 +68,13 @@ import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
 import com.saico.ada.ui.theme.BaseCrema
 import com.saico.ada.ui.theme.BlancoPuro
+import com.saico.ada.ui.theme.TerracotaSuave
 import com.saico.ada.ui.theme.TextoGrisOscuro
 import com.saico.ada.ui.theme.VerdeSalvia
 import com.saico.ada.ui.util.toComposeColor
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -147,7 +145,8 @@ fun HomeScreen(
             } else {
                 val tareasHoy = successState.tareasHoy.sortedBy { it.fechaHoraInicio }
                 items(tareasHoy) { tarea ->
-                    val notasVinculadas = successState.notas.filter { it.tareaId == tarea.id }
+                    val notasVinculadas =
+                        successState.notas.filter { it.tareaId == tarea.id || (tarea.plantillaId != null && it.tareaId == tarea.plantillaId) }
                     TimelineItem(
                         tarea = tarea,
                         notasCount = notasVinculadas.size,
@@ -177,10 +176,14 @@ fun HomeScreen(
         AddTareaDialog(
             tarea = tareaToEdit,
             isMother = successState?.isMother ?: false,
+            customCategorias = successState?.categorias ?: emptyList(),
             onDismiss = { tareaToEdit = null },
             onConfirm = { editedTarea ->
                 viewModel.addTarea(editedTarea)
                 tareaToEdit = null
+            },
+            onAddCustomCategory = { nombre, colorHex ->
+                viewModel.addCategoriaPersonalizada(nombre, colorHex)
             }
         )
     }
@@ -341,38 +344,7 @@ fun HeaderSection(saludoRes: Int, userName: String) {
         Text(
             text = currentDate,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextoGrisOscuro.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-fun EmptyDayState() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.WbSunny,
-            contentDescription = null,
-            tint = VerdeSalvia.copy(alpha = 0.2f),
-            modifier = Modifier.size(80.dp)
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.home_empty_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = TextoGrisOscuro.copy(alpha = 0.6f),
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = stringResource(R.string.home_empty_message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextoGrisOscuro.copy(alpha = 0.4f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp)
+            color = TextoGrisOscuro.copy(alpha = 0.5f)
         )
     }
 }
@@ -388,170 +360,180 @@ fun TimelineItem(
     onToggleCompletada: (Tarea) -> Unit,
     onVerNotas: () -> Unit
 ) {
+    val isPast = tarea.fechaHoraInicio.isBefore(currentDateTime)
     val color = tarea.colorHex.toComposeColor()
-    val icon = when (tarea.categoria) {
-        stringResource(R.string.cat_work) -> Icons.Rounded.BusinessCenter
-        stringResource(R.string.cat_maternity) -> Icons.Rounded.CheckCircle
-        stringResource(R.string.cat_wellbeing) -> Icons.Rounded.SelfImprovement
-        else -> Icons.Rounded.Home
-    }
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    val isPast = currentDateTime.isAfter(tarea.fechaHoraFin)
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .alpha(if (isPast) 0.5f else 1f), verticalAlignment = Alignment.Top
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.width(50.dp)
         ) {
             Text(
-                text = tarea.fechaHoraInicio.format(DateTimeFormatter.ofPattern("HH:mm")),
+                text = tarea.fechaHoraInicio.format(timeFormatter),
                 style = MaterialTheme.typography.labelMedium,
-                color = TextoGrisOscuro.copy(alpha = 0.5f),
-                textDecoration = if (isPast) TextDecoration.LineThrough else TextDecoration.None
+                color = if (isPast && !tarea.estaCompletada) TerracotaSuave else TextoGrisOscuro.copy(
+                    alpha = 0.6f
+                ),
+                fontWeight = FontWeight.Bold
             )
             Box(
                 modifier = Modifier
-                    .padding(top = 4.dp)
                     .width(2.dp)
-                    .height(60.dp)
-                    .background(color.copy(alpha = 0.3f))
+                    .weight(1f)
+                    .background(TextoGrisOscuro.copy(alpha = 0.1f))
             )
         }
 
         Card(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 8.dp)
+                .alpha(if (tarea.estaCompletada) 0.6f else 1f)
                 .clickable { onToggleCompletada(tarea) },
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = BlancoPuro),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isPast) 0.dp else 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    color = if (tarea.estaCompletada) color else color.copy(alpha = 0.2f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp)
+                IconButton(
+                    onClick = { onToggleCompletada(tarea) },
+                    modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
-                        imageVector = if (tarea.estaCompletada) Icons.Rounded.Check else icon,
+                        imageVector = if (tarea.estaCompletada) Icons.Rounded.CheckCircle else Icons.Rounded.Home,
                         contentDescription = null,
-                        tint = if (tarea.estaCompletada) Color.White else color,
-                        modifier = Modifier.padding(8.dp)
+                        tint = if (tarea.estaCompletada) color else color.copy(alpha = 0.4f)
                     )
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = tarea.titulo,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextoGrisOscuro,
-                        textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None
+                        textDecoration = if (tarea.estaCompletada) TextDecoration.LineThrough else TextDecoration.None
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = tarea.categoria,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = color,
-                            textDecoration = if (tarea.estaCompletada || isPast) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                        if (notasCount > 0) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                color = VerdeSalvia.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.clickable { onVerNotas() }
+                    if (notasCount > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(
+                            color = VerdeSalvia.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.clickable { onVerNotas() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Description,
-                                        contentDescription = null,
-                                        tint = VerdeSalvia,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "$notasCount",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = VerdeSalvia,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Rounded.Description,
+                                    contentDescription = null,
+                                    tint = VerdeSalvia,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "$notasCount",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = VerdeSalvia,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
                 }
+
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = stringResource(R.string.action_options),
-                            tint = TextoGrisOscuro.copy(alpha = 0.4f),
-                            modifier = Modifier.size(20.dp)
+                            Icons.Rounded.MoreVert,
+                            contentDescription = "Opciones",
+                            tint = TextoGrisOscuro.copy(alpha = 0.4f)
                         )
                     }
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
-                        modifier = Modifier.background(BlancoPuro)
+                        containerColor = BlancoPuro
                     ) {
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(R.string.action_edit),
-                                    color = TextoGrisOscuro
-                                )
+                            text = { Text(stringResource(R.string.action_edit)) },
+                            onClick = {
+                                showMenu = false
+                                onEdit()
                             },
-                            leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = VerdeSalvia) },
-                            onClick = { showMenu = false; onEdit() })
-                        if (notasCount > 0) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "Ver notas ($notasCount)",
-                                        color = TextoGrisOscuro
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Rounded.Description,
-                                        null,
-                                        tint = VerdeSalvia
-                                    )
-                                },
-                                onClick = { showMenu = false; onVerNotas() })
-                        }
+                            leadingIcon = { Icon(Icons.Rounded.Edit, null) }
+                        )
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(R.string.action_delete),
-                                    color = Color.Red.copy(alpha = 0.7f)
-                                )
+                            text = { Text(stringResource(R.string.action_delete)) },
+                            onClick = {
+                                showMenu = false
+                                onDelete()
                             },
                             leadingIcon = {
                                 Icon(
                                     Icons.Rounded.Delete,
                                     null,
-                                    tint = Color.Red.copy(alpha = 0.7f)
+                                    tint = TerracotaSuave
                                 )
-                            },
-                            onClick = { showMenu = false; onDelete() })
+                            }
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun EmptyDayState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = VerdeSalvia.copy(alpha = 0.1f),
+            modifier = Modifier.size(80.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.SelfImprovement,
+                    contentDescription = null,
+                    tint = VerdeSalvia,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.home_empty_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = TextoGrisOscuro,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Serif
+        )
+        Text(
+            text = stringResource(R.string.home_empty_message),
+            style = MaterialTheme.typography.bodySmall,
+            color = TextoGrisOscuro.copy(alpha = 0.5f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 40.dp)
+        )
     }
 }
