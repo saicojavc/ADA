@@ -212,4 +212,10 @@
 
     <string name="extra_alarms">Recordatorios adicionales</string>
     <string name="no_alarms">Sin recordatorios adicionales</string>
+
+    <!-- ... otros strings ... -->
+    <string name="notif_custom_title">ADA: Recordatorio de tarea</string>
+    <string name="notif_custom_text">Recuerda que tienes: %1$s a las %2$s</string>
+    <string name="notif_task_entry">[%1$s] %2$s (%3$s)</string>
+    <!-- ... -->
 </resources>

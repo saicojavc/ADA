@@ -28,12 +28,11 @@ class AndroidAlarmScheduler @Inject constructor(
         private const val REMINDER_MINUTES = 30L
         private const val OFFSET_EXACT = 0
         private const val OFFSET_EARLY = 1
-        private const val OFFSET_CUSTOM = 100 // Alarms starting from 100
+        private const val OFFSET_CUSTOM = 100 
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun schedule(tarea: Tarea) {
-        // Cancelar previas para evitar duplicados si se edita
         cancel(tarea)
 
         if (tarea.esPlantilla) {
@@ -42,11 +41,14 @@ class AndroidAlarmScheduler @Inject constructor(
             scheduleSingleAlarm(tarea)
         }
 
-        // Programar alarmas personalizadas
         tarea.alarmasPersonalizadas.forEachIndexed { index, dateTime ->
             val triggerTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
             if (triggerTime > System.currentTimeMillis()) {
-                val intent = createBaseIntent(tarea, "ACTION_TASK_CUSTOM_${tarea.id}_$index")
+                val intent = createBaseIntent(tarea, "ACTION_TASK_CUSTOM_${tarea.id}_$index").apply {
+                    putExtra("EXTRA_IS_CUSTOM", true)
+                    putExtra("EXTRA_TARGET_DATE", dateTime.toLocalDate().toString())
+                    putExtra("EXTRA_TARGET_TIME", dateTime.toLocalTime().toString())
+                }
                 scheduleExact(triggerTime, (tarea.id * 1000) + OFFSET_CUSTOM + index, intent)
             }
         }
@@ -75,6 +77,7 @@ class AndroidAlarmScheduler @Inject constructor(
         val nextOccurrence = when (tarea.tipoRepeticion) {
             TipoRepeticion.TODOS_LOS_DIAS -> getNextOccurrence(LocalDate.now(), horaBase)
             TipoRepeticion.DIAS_ESPECIFICOS -> getNextOccurrenceOfSpecificDays(tarea.diasRepeticion, horaBase)
+            TipoRepeticion.MENSUAL -> getNextMonthlyOccurrence(tarea.fechaInicioRepeticion ?: LocalDate.now(), horaBase)
             else -> return
         }
 
@@ -89,6 +92,28 @@ class AndroidAlarmScheduler @Inject constructor(
             }
             scheduleExact(earlyTrigger, (tarea.id * 1000) + OFFSET_EARLY, earlyIntent)
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getNextMonthlyOccurrence(startDate: LocalDate, time: LocalTime): ZonedDateTime {
+        val dayOfMonth = startDate.dayOfMonth
+        var current = LocalDate.now()
+        
+        var nextDate = try {
+            current.withDayOfMonth(dayOfMonth)
+        } catch (e: Exception) {
+            current.withDayOfMonth(current.lengthOfMonth())
+        }
+
+        if (LocalDateTime.of(nextDate, time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() <= System.currentTimeMillis()) {
+            current = current.plusMonths(1)
+            nextDate = try {
+                current.withDayOfMonth(dayOfMonth)
+            } catch (e: Exception) {
+                current.withDayOfMonth(current.lengthOfMonth())
+            }
+        }
+        return LocalDateTime.of(nextDate, time).atZone(ZoneId.systemDefault())
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -143,16 +168,12 @@ class AndroidAlarmScheduler @Inject constructor(
 
     override fun cancel(tarea: Tarea) {
         val intent = Intent(context, TaskAlarmReceiver::class.java)
-
-        // Cancelar alarmas fijas (exacta y previa)
         val pExact = PendingIntent.getBroadcast(context, (tarea.id * 1000) + OFFSET_EXACT, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
         val pEarly = PendingIntent.getBroadcast(context, (tarea.id * 1000) + OFFSET_EARLY, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
         pExact?.let { alarmManager.cancel(it) }
         pEarly?.let { alarmManager.cancel(it) }
 
-        // Cancelar alarmas personalizadas (asumimos un máximo razonable para limpiar, o guardamos cuántas había)
-        // Por simplicidad, limpiamos las primeras 10 posibles
-        for (i in 0..10) {
+        for (i in 0..20) {
             val pCustom = PendingIntent.getBroadcast(context, (tarea.id * 1000) + OFFSET_CUSTOM + i, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
             pCustom?.let { alarmManager.cancel(it) }
         }
