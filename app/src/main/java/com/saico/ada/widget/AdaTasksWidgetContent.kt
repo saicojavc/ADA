@@ -1,5 +1,6 @@
 package com.saico.ada.widget
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
@@ -36,12 +37,25 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 object AdaTheme {
+    @SuppressLint("RestrictedApi")
     val Fondo = ColorProvider(Color(0xFFFAF8F5))
+
+    @SuppressLint("RestrictedApi")
     val TextoPrincipal = ColorProvider(Color(0xFF3D405B))
+
+    @SuppressLint("RestrictedApi")
     val TextoSecundario = ColorProvider(Color(0x993D405B))
+
+    @SuppressLint("RestrictedApi")
     val Verde = ColorProvider(Color(0xFF81B29A))
+
+    @SuppressLint("RestrictedApi")
     val Terracota = ColorProvider(Color(0xFFE07A5F))
+
+    @SuppressLint("RestrictedApi")
     val Blanco = ColorProvider(Color(0xFFFFFFFF))
+
+    @SuppressLint("RestrictedApi")
     val GrisSuave = ColorProvider(Color(0xFFF0EFEA))
 }
 
@@ -131,6 +145,7 @@ fun AdaTasksWidgetContent(tareas: List<WidgetTarea>) {
     }
 }
 
+@SuppressLint("RestrictedApi")
 @Composable
 private fun WidgetTareaCard(tarea: WidgetTarea) {
     val completada = tarea.estaCompletada
