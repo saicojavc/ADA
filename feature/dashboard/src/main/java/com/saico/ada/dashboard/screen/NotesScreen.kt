@@ -43,7 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.components.AddNotaDialog
-import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.dashboard.state.NotesState
 import com.saico.ada.model.Nota
 import com.saico.ada.ui.R
 import com.saico.ada.ui.theme.TextoGrisOscuro
@@ -54,11 +54,11 @@ import java.time.format.DateTimeFormatter
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NotesScreen(
-    uiState: DashboardState,
+    uiState: NotesState,
     viewModel: DashboardViewModel
 ) {
     var notaToEdit by remember { mutableStateOf<Nota?>(null) }
-    val successState = uiState as? DashboardState.Success
+    val successState = uiState as? NotesState.Success
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -97,7 +97,7 @@ fun NotesScreen(
                     }
                 }
             }
-        } else if (uiState is DashboardState.Loading) {
+        } else if (uiState is NotesState.Loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = VerdeSalvia)
             }

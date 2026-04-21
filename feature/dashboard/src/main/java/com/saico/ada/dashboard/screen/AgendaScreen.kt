@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +69,7 @@ import com.saico.ada.dashboard.components.AnnualCalendarView
 import com.saico.ada.dashboard.components.MonthlyCalendarGrid
 import com.saico.ada.dashboard.components.ViewModeSelector
 import com.saico.ada.dashboard.components.WeeklyCalendarStrip
-import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.dashboard.state.AgendaState
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
@@ -86,128 +87,138 @@ import java.time.format.TextStyle
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AgendaScreen(
-    todasLasTareas: List<Tarea>,
-    tareasDelDia: List<Tarea>,
-    selectedDate: LocalDate,
-    agendaViewMode: AgendaViewMode,
-    onDateSelected: (LocalDate) -> Unit,
-    onViewModeChanged: (AgendaViewMode) -> Unit,
-    uiState: DashboardState,
-    viewModel: DashboardViewModel? = null
+    uiState: AgendaState,
+    viewModel: DashboardViewModel
 ) {
-    val itemsAgenda = tareasDelDia.sortedBy { it.fechaHoraInicio.toLocalTime() }
-    val now = LocalDateTime.now()
-    val successState = uiState as? DashboardState.Success
-
     var tareaVerNotas by remember { mutableStateOf<Pair<Tarea, List<Nota>>?>(null) }
     var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
     var tareaToDelete by remember { mutableStateOf<Tarea?>(null) }
+    val successState = uiState as? AgendaState.Success
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
-        item { ViewModeSelector(currentMode = agendaViewMode, onModeSelected = onViewModeChanged) }
-
-        item {
-            when (agendaViewMode) {
-                AgendaViewMode.SEMANAL -> WeeklyCalendarStrip(
-                    selectedDate = selectedDate,
-                    tareas = todasLasTareas,
-                    onDateSelected = onDateSelected
-                )
-
-                AgendaViewMode.MENSUAL -> MonthlyCalendarGrid(
-                    selectedDate = selectedDate,
-                    tareas = todasLasTareas,
-                    onDateSelected = onDateSelected
-                )
-
-                AgendaViewMode.ANUAL -> AnnualCalendarView(
-                    selectedDate = selectedDate,
-                    tareas = todasLasTareas,
-                    onDateSelected = onDateSelected,
-                    onSwitchToMonthly = { onViewModeChanged(AgendaViewMode.MENSUAL) })
-            }
-        }
-
-        item {
-            AgendaDayHeader(
-                date = selectedDate,
-                taskCount = itemsAgenda.size,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-            )
-        }
-
-        if (itemsAgenda.isEmpty()) {
+        if (successState != null) {
             item {
-                EmptyDayState(
+                ViewModeSelector(
+                    currentMode = successState.viewMode,
+                    onModeSelected = viewModel::onAgendaViewModeChanged
+                )
+            }
+
+            item {
+                when (successState.viewMode) {
+                    AgendaViewMode.SEMANAL -> WeeklyCalendarStrip(
+                        selectedDate = successState.selectedDate,
+                        tareas = successState.todasLasTareas,
+                        onDateSelected = viewModel::onAgendaDateSelected
+                    )
+
+                    AgendaViewMode.MENSUAL -> MonthlyCalendarGrid(
+                        selectedDate = successState.selectedDate,
+                        tareas = successState.todasLasTareas,
+                        onDateSelected = viewModel::onAgendaDateSelected
+                    )
+
+                    AgendaViewMode.ANUAL -> AnnualCalendarView(
+                        selectedDate = successState.selectedDate,
+                        tareas = successState.todasLasTareas,
+                        onDateSelected = viewModel::onAgendaDateSelected,
+                        onSwitchToMonthly = { viewModel.onAgendaViewModeChanged(AgendaViewMode.MENSUAL) }
+                    )
+                }
+            }
+
+            item {
+                AgendaDayHeader(
+                    date = successState.selectedDate,
+                    taskCount = successState.tareasDelDia.size,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                )
+            }
+
+            if (successState.tareasDelDia.isEmpty()) {
+                item {
+                    EmptyDayState(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                    )
+                }
+            } else {
+                val itemsAgenda = successState.tareasDelDia.sortedBy { it.fechaHoraInicio.toLocalTime() }
+                val now = LocalDateTime.now()
+                items(
+                    itemsAgenda,
+                    key = { it.id.toString() + it.fechaHoraInicio.toString() }) { tarea ->
+                    val notasVinculadas =
+                        successState.notas.filter { it.tareaId == tarea.id || (tarea.plantillaId != null && it.tareaId == tarea.plantillaId) }
+
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                tareaToDelete = tarea
+                                false
+                            } else false
+                        }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = {
+                            val color by animateColorAsState(
+                                when (dismissState.targetValue) {
+                                    SwipeToDismissBoxValue.EndToStart -> TerracotaSuave.copy(alpha = 0.8f)
+                                    else -> Color.Transparent
+                                }, label = "dismiss_color"
+                            )
+                            val scale by animateFloatAsState(
+                                if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1.2f,
+                                label = "dismiss_scale"
+                            )
+
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(color)
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Delete,
+                                    contentDescription = "Eliminar",
+                                    modifier = Modifier.scale(scale),
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        modifier = Modifier.animateItem()
+                    ) {
+                        TareaAgendaCard(
+                            tarea = tarea,
+                            notasCount = notasVinculadas.size,
+                            now = now,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            onVerNotas = { tareaVerNotas = tarea to notasVinculadas },
+                            onEdit = { tareaToEdit = it },
+                            onToggleCompletada = { viewModel.toggleTareaCompletada(it) }
+                        )
+                    }
+                }
+            }
+        } else if (uiState is AgendaState.Loading) {
+            item {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                )
-            }
-        } else {
-            items(
-                itemsAgenda,
-                key = { it.id.toString() + it.fechaHoraInicio.toString() }) { tarea ->
-                val notasVinculadas =
-                    successState?.notas?.filter { it.tareaId == tarea.id || (tarea.plantillaId != null && it.tareaId == tarea.plantillaId) }
-                        ?: emptyList()
-
-                // Implementación de Swipe to Dismiss
-                val dismissState = rememberSwipeToDismissBoxState(
-                    confirmValueChange = { value ->
-                        if (value == SwipeToDismissBoxValue.EndToStart) {
-                            tareaToDelete = tarea
-                            false // Retornamos false para que el item no desaparezca hasta que se confirme en el diálogo
-                        } else false
-                    }
-                )
-
-                SwipeToDismissBox(
-                    state = dismissState,
-                    enableDismissFromStartToEnd = false,
-                    backgroundContent = {
-                        val color by animateColorAsState(
-                            when (dismissState.targetValue) {
-                                SwipeToDismissBoxValue.EndToStart -> TerracotaSuave.copy(alpha = 0.8f)
-                                else -> Color.Transparent
-                            }, label = "dismiss_color"
-                        )
-                        val scale by animateFloatAsState(
-                            if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1.2f,
-                            label = "dismiss_scale"
-                        )
-
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp, vertical = 4.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(color)
-                                .padding(horizontal = 20.dp),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Icon(
-                                Icons.Rounded.Delete,
-                                contentDescription = "Eliminar",
-                                modifier = Modifier.scale(scale),
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    modifier = Modifier.animateItem()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    TareaAgendaCard(
-                        tarea = tarea,
-                        notasCount = notasVinculadas.size,
-                        now = now,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                        onVerNotas = { tareaVerNotas = tarea to notasVinculadas },
-                        onEdit = { tareaToEdit = it },
-                        onToggleCompletada = { viewModel?.toggleTareaCompletada(it) }
-                    )
+                    CircularProgressIndicator(color = VerdeSalvia)
                 }
             }
         }
@@ -228,11 +239,11 @@ fun AgendaScreen(
             customCategorias = successState?.categorias ?: emptyList(),
             onDismiss = { tareaToEdit = null },
             onConfirm = { editedTarea ->
-                viewModel?.addTarea(editedTarea)
+                viewModel.addTarea(editedTarea)
                 tareaToEdit = null
             },
             onAddCustomCategory = { nombre, colorHex ->
-                viewModel?.addCategoriaPersonalizada(nombre, colorHex)
+                viewModel.addCategoriaPersonalizada(nombre, colorHex)
             }
         )
     }
@@ -257,7 +268,7 @@ fun AgendaScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel?.deleteTarea(tareaToDelete!!, true)
+                        viewModel.deleteTarea(tareaToDelete!!, true)
                         tareaToDelete = null
                     }) {
                         Text(
@@ -268,7 +279,7 @@ fun AgendaScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = {
-                        viewModel?.deleteTarea(tareaToDelete!!, false)
+                        viewModel.deleteTarea(tareaToDelete!!, false)
                         tareaToDelete = null
                     }) {
                         Text(
@@ -279,7 +290,7 @@ fun AgendaScreen(
                 }
             )
         } else {
-            viewModel?.deleteTarea(tareaToDelete!!)
+            viewModel.deleteTarea(tareaToDelete!!)
             tareaToDelete = null
         }
     }
@@ -430,42 +441,5 @@ fun TareaAgendaCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun EmptyDayState(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = VerdeSalvia.copy(alpha = 0.1f),
-            modifier = Modifier.size(72.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.CalendarToday,
-                    contentDescription = null,
-                    tint = VerdeSalvia,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-        }
-        Text(
-            text = stringResource(R.string.agenda_free_day),
-            style = MaterialTheme.typography.titleMedium,
-            color = TextoGrisOscuro,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Serif
-        )
-        Text(
-            text = stringResource(R.string.agenda_empty_message),
-            style = MaterialTheme.typography.bodySmall,
-            color = TextoGrisOscuro.copy(alpha = 0.5f),
-            textAlign = TextAlign.Center
-        )
     }
 }

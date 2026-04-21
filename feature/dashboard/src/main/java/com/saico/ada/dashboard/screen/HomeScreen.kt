@@ -62,7 +62,7 @@ import androidx.compose.ui.unit.dp
 import com.saico.ada.dashboard.DashboardViewModel
 import com.saico.ada.dashboard.components.AdaSuggestionCard
 import com.saico.ada.dashboard.components.AddTareaDialog
-import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.dashboard.state.HomeState
 import com.saico.ada.model.Nota
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.R
@@ -81,13 +81,13 @@ import java.time.format.FormatStyle
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen(
-    uiState: DashboardState,
+    uiState: HomeState,
     viewModel: DashboardViewModel
 ) {
     var tareaToEdit by remember { mutableStateOf<Tarea?>(null) }
     var tareaToDelete by remember { mutableStateOf<Tarea?>(null) }
     var tareaVerNotas by remember { mutableStateOf<Pair<Tarea, List<Nota>>?>(null) }
-    val successState = uiState as? DashboardState.Success
+    val successState = uiState as? HomeState.Success
 
     var currentDateTime by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
@@ -158,7 +158,7 @@ fun HomeScreen(
                     )
                 }
             }
-        } else {
+        } else if (uiState is HomeState.Loading) {
             item {
                 Box(
                     modifier = Modifier
@@ -499,7 +499,7 @@ fun TimelineItem(
 }
 
 @Composable
-fun EmptyDayState() {
+fun EmptyDayState(modifier: Modifier = Modifier) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

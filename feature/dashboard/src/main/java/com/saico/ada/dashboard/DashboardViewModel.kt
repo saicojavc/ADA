@@ -4,7 +4,10 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.dashboard.state.AgendaState
+import com.saico.ada.dashboard.state.HomeState
+import com.saico.ada.dashboard.state.NotesState
+import com.saico.ada.dashboard.state.WellnessState
 import com.saico.ada.datastore.UserPrefs
 import com.saico.ada.domain.use_case.AddCategoriaUseCase
 import com.saico.ada.domain.use_case.AddNoteUseCase
@@ -32,9 +35,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -64,42 +68,116 @@ class DashboardViewModel @Inject constructor(
     private val addCategoriaUseCase: AddCategoriaUseCase
 ) : ViewModel() {
 
+    private val dashboardData = getDashboardDataUseCase()
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+
     @RequiresApi(Build.VERSION_CODES.O)
     private val _selectedAgendaDate = MutableStateFlow(LocalDate.now())
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    val selectedAgendaDate: StateFlow<LocalDate> = _selectedAgendaDate.asStateFlow()
-
     private val _agendaViewMode = MutableStateFlow(AgendaViewMode.SEMANAL)
-    val agendaViewMode: StateFlow<AgendaViewMode> = _agendaViewMode.asStateFlow()
 
     @RequiresApi(Build.VERSION_CODES.O)
-    val state: StateFlow<DashboardState> = combine(
-        getDashboardDataUseCase(),
-        _selectedAgendaDate,
-        combine(userPrefs.userName, userPrefs.isMother) { name, mother -> name to mother },
-        getBalanceScoreUseCase(),
+    val homeState: StateFlow<HomeState> = combine(
+        dashboardData,
+        userPrefs.userName,
+        userPrefs.isMother,
         getInactivitySleepUseCase()
-    ) { data, agendaDate, userPref, balanceScore, autoSleepHours ->
-        val userName = userPref.first
-        val isMother = userPref.second
+    ) { data, userName, isMother, autoSleepHours ->
         val today = LocalDate.now()
-
         val greetingRes = when (getGreetingUseCase()) {
             GreetingTime.MORNING -> R.string.home_greeting_morning
             GreetingTime.AFTERNOON -> R.string.home_greeting_afternoon
             GreetingTime.EVENING -> R.string.home_greeting_evening
         }
+        val tareasHoy = getTasksForDateUseCase(data.tareas, data.excepciones, today)
+        val suggestion = getSmartSuggestionUseCase(tareasHoy)
+        
+        val totalSleepHours = calculateSleepHours(tareasHoy, autoSleepHours)
 
-        val tareasHoyFinal = getTasksForDateUseCase(data.tareas, data.excepciones, today)
-        val tareasAgendaFinal = getTasksForDateUseCase(data.tareas, data.excepciones, agendaDate)
-        val todasLasTareasVisibles =
-            getTasksForMonthUseCase(data.tareas, data.excepciones, agendaDate)
+        HomeState.Success(
+            tareasHoy = tareasHoy,
+            userName = userName ?: "",
+            greetingRes = greetingRes,
+            isMother = isMother,
+            adaSuggestionRes = suggestion.mensajeRes,
+            adaActionRes = suggestion.accionRes,
+            adaSuggestionArgs = suggestion.mensajeArgs,
+            adaActionArgs = suggestion.accionArgs,
+            suggestionType = suggestion.tipo,
+            horasSueno = totalSleepHours,
+            categorias = data.categorias,
+            notas = data.notas
+        )
+    }.map { it as HomeState }
+        .catch { e -> emit(HomeState.Error(e.message ?: "Error desconocido")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeState.Loading)
 
-        val suggestion = getSmartSuggestionUseCase(tareasHoyFinal)
+    @RequiresApi(Build.VERSION_CODES.O)
+    val agendaState: StateFlow<AgendaState> = combine(
+        dashboardData,
+        _selectedAgendaDate,
+        _agendaViewMode,
+        userPrefs.isMother
+    ) { data, date, viewMode, isMother ->
+        val tareasDelDia = getTasksForDateUseCase(data.tareas, data.excepciones, date)
+        val todasLasTareas = getTasksForMonthUseCase(data.tareas, data.excepciones, date)
 
+        AgendaState.Success(
+            tareasDelDia = tareasDelDia,
+            todasLasTareas = todasLasTareas,
+            notas = data.notas,
+            categorias = data.categorias,
+            isMother = isMother,
+            selectedDate = date,
+            viewMode = viewMode
+        )
+    }.map { it as AgendaState }
+        .catch { e -> emit(AgendaState.Error(e.message ?: "Error desconocido")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AgendaState.Loading)
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    val wellnessState: StateFlow<WellnessState> = combine(
+        dashboardData,
+        getBalanceScoreUseCase(),
+        getInactivitySleepUseCase(),
+        userPrefs.isMother
+    ) { data, balanceScore, autoSleepHours, isMother ->
+        val today = LocalDate.now()
+        val tareasHoy = getTasksForDateUseCase(data.tareas, data.excepciones, today)
+        val totalSleepHours = calculateSleepHours(tareasHoy, autoSleepHours)
+
+        WellnessState.Success(
+            registrosBienestar = data.registrosBienestar,
+            balanceScore = balanceScore,
+            horasSueno = totalSleepHours,
+            tareasHoy = tareasHoy,
+            isMother = isMother
+        )
+    }.map { it as WellnessState }
+        .catch { e -> emit(WellnessState.Error(e.message ?: "Error desconocido")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WellnessState.Loading)
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    val notesState: StateFlow<NotesState> = combine(
+        dashboardData,
+        userPrefs.isMother
+    ) { data, isMother ->
+        val currentMonth = LocalDate.now()
+        val todasLasTareas = getTasksForMonthUseCase(data.tareas, data.excepciones, currentMonth)
+
+        NotesState.Success(
+            notas = data.notas,
+            todasLasTareas = todasLasTareas,
+            isMother = isMother
+        )
+    }.map { it as NotesState }
+        .catch { e -> emit(NotesState.Error(e.message ?: "Error desconocido")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NotesState.Loading)
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun calculateSleepHours(tareasHoy: List<Tarea>, autoSleepHours: Float): Float {
         val keywordsSueno = listOf("sueño", "descanso", "sleep", "rest")
-        val manualSleepHours = tareasHoyFinal
+        val manualSleepHours = tareasHoy
             .filter {
                 it.estaCompletada && keywordsSueno.any { kw ->
                     it.titulo.lowercase().contains(kw)
@@ -110,28 +188,8 @@ class DashboardViewModel @Inject constructor(
                 duracion.toDouble() / 60.0
             }.toFloat()
 
-        val totalSleepHours = maxOf(manualSleepHours, autoSleepHours)
-
-        DashboardState.Success(
-            tareasHoy = tareasHoyFinal,
-            tareasAgenda = tareasAgendaFinal,
-            todasLasTareas = todasLasTareasVisibles,
-            registrosBienestar = data.registrosBienestar,
-            notas = data.notas,
-            categorias = data.categorias,
-            userName = userName ?: "",
-            greetingRes = greetingRes,
-            isMother = isMother,
-            adaSuggestionRes = suggestion.mensajeRes,
-            adaActionRes = suggestion.accionRes,
-            adaSuggestionArgs = suggestion.mensajeArgs,
-            adaActionArgs = suggestion.accionArgs,
-            suggestionType = suggestion.tipo,
-            balanceScore = balanceScore,
-            horasSueno = totalSleepHours
-        ) as DashboardState
-    }.catch { e -> emit(DashboardState.Error(e.message ?: "Error desconocido")) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState.Loading)
+        return maxOf(manualSleepHours, autoSleepHours)
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun onAgendaDateSelected(date: LocalDate) {

@@ -29,38 +29,47 @@ import com.saico.ada.dashboard.screen.AgendaScreen
 import com.saico.ada.dashboard.screen.HomeScreen
 import com.saico.ada.dashboard.screen.NotesScreen
 import com.saico.ada.dashboard.screen.WellnessScreen
-import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.dashboard.state.AgendaState
+import com.saico.ada.dashboard.state.HomeState
+import com.saico.ada.dashboard.state.NotesState
+import com.saico.ada.dashboard.state.WellnessState
 import com.saico.ada.ui.components.AdaGravityBackground
 import com.saico.ada.ui.components.AdaSpeedDialFab
 import com.saico.ada.ui.components.FabAction
-import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.state.collectAsStateWithLifecycle()
-    val agendaSelectedDate by viewModel.selectedAgendaDate.collectAsStateWithLifecycle()
-    val agendaViewMode by viewModel.agendaViewMode.collectAsStateWithLifecycle()
-    Context(uiState, viewModel, agendaSelectedDate, agendaViewMode)
+    val homeState by viewModel.homeState.collectAsStateWithLifecycle()
+    val agendaState by viewModel.agendaState.collectAsStateWithLifecycle()
+    val wellnessState by viewModel.wellnessState.collectAsStateWithLifecycle()
+    val notesState by viewModel.notesState.collectAsStateWithLifecycle()
+
+    Context(
+        homeState = homeState,
+        agendaState = agendaState,
+        wellnessState = wellnessState,
+        notesState = notesState,
+        viewModel = viewModel
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Context(
-    uiState: DashboardState,
-    viewModel: DashboardViewModel,
-    agendaSelectedDate: LocalDate,
-    agendaViewMode: AgendaViewMode
+    homeState: HomeState,
+    agendaState: AgendaState,
+    wellnessState: WellnessState,
+    notesState: NotesState,
+    viewModel: DashboardViewModel
 ) {
     var selectedBottomAppBarItem by remember { mutableStateOf(BottomAppBarItems.HOME) }
     var isFabExpanded by remember { mutableStateOf(false) }
 
     var showAddTareaDialog by remember { mutableStateOf(false) }
     var showAddNotaDialog by remember { mutableStateOf(false) }
-
-    val successState = uiState as? DashboardState.Success
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -82,20 +91,14 @@ fun Context(
                         .padding(paddingValues)
                 ) {
                     when (selectedBottomAppBarItem) {
-                        BottomAppBarItems.HOME -> HomeScreen(uiState, viewModel)
+                        BottomAppBarItems.HOME -> HomeScreen(homeState, viewModel)
                         BottomAppBarItems.AGENDA -> AgendaScreen(
-                            todasLasTareas = successState?.todasLasTareas ?: emptyList(),
-                            tareasDelDia = successState?.tareasAgenda ?: emptyList(),
-                            selectedDate = agendaSelectedDate,
-                            agendaViewMode = agendaViewMode,
-                            onDateSelected = viewModel::onAgendaDateSelected,
-                            onViewModeChanged = viewModel::onAgendaViewModeChanged,
-                            uiState = uiState,
+                            uiState = agendaState,
                             viewModel = viewModel
                         )
 
-                        BottomAppBarItems.WELLNES -> WellnessScreen(uiState, viewModel)
-                        BottomAppBarItems.NOTES -> NotesScreen(uiState, viewModel)
+                        BottomAppBarItems.WELLNES -> WellnessScreen(wellnessState, viewModel)
+                        BottomAppBarItems.NOTES -> NotesScreen(notesState, viewModel)
                     }
                 }
             }
@@ -113,7 +116,6 @@ fun Context(
             )
         }
 
-        // FAB posicionado manualmente para estar encima del fondo opaco y separado de la nav bar
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -134,11 +136,10 @@ fun Context(
         }
 
         if (showAddTareaDialog) {
-            val isMother = successState?.isMother ?: false
-            val customCategorias = successState?.categorias ?: emptyList()
+            val successState = homeState as? HomeState.Success
             AddTareaDialog(
-                isMother = isMother,
-                customCategorias = customCategorias,
+                isMother = successState?.isMother ?: false,
+                customCategorias = successState?.categorias ?: emptyList(),
                 onDismiss = { showAddTareaDialog = false },
                 onConfirm = { tarea ->
                     viewModel.addTarea(tarea)
@@ -151,6 +152,7 @@ fun Context(
         }
 
         if (showAddNotaDialog) {
+            val successState = notesState as? NotesState.Success
             AddNotaDialog(
                 tareas = successState?.todasLasTareas ?: emptyList(),
                 onDismiss = { showAddNotaDialog = false },

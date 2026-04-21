@@ -1,14 +1,12 @@
 package com.saico.ada.dashboard.screen
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +34,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.saico.ada.dashboard.DashboardViewModel
-import com.saico.ada.dashboard.state.DashboardState
+import com.saico.ada.dashboard.state.WellnessState
 import com.saico.ada.model.Bienestar
 import com.saico.ada.model.Tarea
 import com.saico.ada.ui.theme.*
@@ -50,10 +48,10 @@ enum class TimeOfDay { DAY, SUNSET, NIGHT }
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun WellnessScreen(
-    uiState: DashboardState,
+    uiState: WellnessState,
     viewModel: DashboardViewModel
 ) {
-    val successState = uiState as? DashboardState.Success
+    val successState = uiState as? WellnessState.Success
     val registros = successState?.registrosBienestar ?: emptyList()
     val balanceScore = successState?.balanceScore ?: 0
     val horasSueno = successState?.horasSueno ?: 0f
